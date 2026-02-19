@@ -6,21 +6,15 @@ import Register from "./pages/Register";
 import Bookings from "./pages/Bookings";
 import AdminDashboard from "./pages/AdminDashboard";
 
-// Navigation component
 function Navigation() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
   const handleLogout = () => {
-    // Clear token and user info
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
-    // Redirect to login page
-    navigate("/login");
-
-    // Optional: force a UI refresh
-    window.location.reload();
+    navigate("/login"); // React Router handles navigation
+    // window.location.reload(); <-- removed to prevent 404 on Vercel
   };
 
   return (
@@ -56,7 +50,6 @@ function Navigation() {
   );
 }
 
-// App component
 export default function App() {
   return (
     <Router>
