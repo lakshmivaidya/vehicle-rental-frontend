@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 import Vehicles from "./pages/Vehicles";
 import Login from "./pages/Login";
@@ -5,15 +6,21 @@ import Register from "./pages/Register";
 import Bookings from "./pages/Bookings";
 import AdminDashboard from "./pages/AdminDashboard";
 
+// Navigation component
 function Navigation() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
   const handleLogout = () => {
+    // Clear token and user info
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
+    // Redirect to login page
     navigate("/login");
-    window.location.reload(); // refresh UI
+
+    // Optional: force a UI refresh
+    window.location.reload();
   };
 
   return (
@@ -49,6 +56,7 @@ function Navigation() {
   );
 }
 
+// App component
 export default function App() {
   return (
     <Router>
