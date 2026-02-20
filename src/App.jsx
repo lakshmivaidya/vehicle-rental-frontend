@@ -1,5 +1,6 @@
-// frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+
 import Vehicles from "./pages/Vehicles";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -8,19 +9,28 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 function Navigation() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [user, setUser] = useState(null);
+
+  // Load user from localStorage
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    setUser(storedUser);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/login"); // React Router handles navigation
-    // window.location.reload(); <-- removed to prevent 404 on Vercel
+    setUser(null);
+    navigate("/login");
   };
 
   return (
     <nav className="bg-white shadow p-4 flex gap-4 items-center">
       <Link className="hover:underline" to="/">Vehicles</Link>
-      <Link className="hover:underline" to="/bookings">Bookings</Link>
+
+      {user && (
+        <Link className="hover:underline" to="/bookings">Bookings</Link>
+      )}
 
       {!user && (
         <>
