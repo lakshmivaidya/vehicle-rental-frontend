@@ -1,6 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-
 import Vehicles from "./pages/Vehicles";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -9,28 +7,19 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 function Navigation() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  // Load user from localStorage
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser);
-  }, []);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setUser(null);
     navigate("/login");
+    window.location.reload(); // refresh UI
   };
 
   return (
     <nav className="bg-white shadow p-4 flex gap-4 items-center">
       <Link className="hover:underline" to="/">Vehicles</Link>
-
-      {user && (
-        <Link className="hover:underline" to="/bookings">Bookings</Link>
-      )}
+      <Link className="hover:underline" to="/bookings">Bookings</Link>
 
       {!user && (
         <>
