@@ -1,67 +1,65 @@
 import { useState } from "react";
-import { api } from "../api";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api";
 
 export default function Login() {
-  const [form, setForm] = useState({ email: "", password: "", role: "user" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("user"); // default login role
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const submit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
     try {
-      const res = await api.post("/auth/login", form);
-      
-      // Save token and user info in localStorage
+      const res = await api.post("/auth/login", { email, password, role });
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      alert(`Logged in successfully as ${res.data.user.role}!`);
-
-      // Redirect based on role
-      if (res.data.user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/vehicles");
-      }
+      navigate("/"); // redirect to home
+      window.location.reload(); // refresh UI after login
     } catch (err) {
-      console.error(err);
-      alert("Login failed: " + (err.response?.data?.message || err.message));
+      setError(err.response?.data?.message || "Login failed");
+      console.error("Login error:", err);
     }
   };
 
   return (
-    <div className="max-w-sm mx-auto bg-white p-4 rounded shadow mt-20">
-      <h2 className="text-xl font-bold mb-4">Login</h2>
-
-      <input
-        className="border p-2 w-full mb-2"
-        placeholder="Email"
-        value={form.email}
-        onChange={e => setForm({ ...form, email: e.target.value })}
-      />
-
-      <input
-        className="border p-2 w-full mb-2"
-        placeholder="Password"
-        type="password"
-        value={form.password}
-        onChange={e => setForm({ ...form, password: e.target.value })}
-      />
-
-      <select
-        className="border p-2 w-full mb-2"
-        value={form.role}
-        onChange={e => setForm({ ...form, role: e.target.value })}
-      >
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-      </select>
-
-      <button
-        className="bg-blue-600 text-white p-2 w-full rounded hover:bg-blue-700"
-        onClick={submit}
-      >
-        Login
-      </button>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
+      <h1 className="text-2xl font-bold mb-4">Login</h1>
+      {error && <p className="text-red-600 mb-2">{error}</p>}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="email"
+          placeholder="Email"
+          className="border p-2 rounded"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="border p-2 rounded"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="border p-2 rounded"
+        >
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+        >
+          Login
+        </button>
+      </form>
     </div>
   );
 }

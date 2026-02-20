@@ -1,5 +1,6 @@
 import axios from "axios";
 
+// Backend URL on Vercel
 export const api = axios.create({
   baseURL: "https://vehicle-rental-backend-sandy.vercel.app/api",
 });
@@ -13,7 +14,5 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
