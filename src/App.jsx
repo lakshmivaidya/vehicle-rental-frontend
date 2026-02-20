@@ -12,26 +12,46 @@ function Navigation() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/login"); // No reload, no backend call
   };
 
   return (
-    <nav className="bg-white shadow p-4 flex gap-4 items-center">
-      <Link className="hover:underline" to="/">Vehicles</Link>
-      <Link className="hover:underline" to="/bookings">Bookings</Link>
+    <nav className="bg-white shadow p-4 flex items-center gap-4">
+      {/* Always visible */}
+      <Link className="hover:underline font-semibold" to="/">
+        Vehicles
+      </Link>
 
+      <Link className="hover:underline" to="/bookings">
+        Rental History
+      </Link>
+
+      {/* If NOT logged in */}
       {!user && (
         <>
-          <Link className="hover:underline" to="/login">Login</Link>
-          <Link className="hover:underline" to="/register">Register</Link>
+          <Link className="hover:underline" to="/login">
+            Login
+          </Link>
+          <Link className="hover:underline" to="/register">
+            Register
+          </Link>
         </>
       )}
 
-      {user?.role === "admin" && <Link className="hover:underline" to="/admin">Admin</Link>}
+      {/* If Admin */}
+      {user?.role === "admin" && (
+        <Link className="hover:underline" to="/admin">
+          Admin
+        </Link>
+      )}
 
+      {/* If Logged In */}
       {user && (
         <>
-          <span className="ml-auto font-semibold">{user.name} ({user.role})</span>
+          <span className="ml-auto font-semibold">
+            {user.name} ({user.role})
+          </span>
+
           <button
             onClick={handleLogout}
             className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
@@ -49,6 +69,7 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-gray-100">
         <Navigation />
+
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Vehicles />} />
