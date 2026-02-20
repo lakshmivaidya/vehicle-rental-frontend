@@ -27,15 +27,11 @@ function Navigation() {
         </>
       )}
 
-      {user?.role === "admin" && (
-        <Link className="hover:underline" to="/admin">Admin</Link>
-      )}
+      {user?.role === "admin" && <Link className="hover:underline" to="/admin">Admin</Link>}
 
       {user && (
         <>
-          <span className="ml-auto font-semibold">
-            {user.name} ({user.role})
-          </span>
+          <span className="ml-auto font-semibold">{user.name} ({user.role})</span>
           <button
             onClick={handleLogout}
             className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
@@ -53,7 +49,6 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-gray-100">
         <Navigation />
-
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Vehicles />} />

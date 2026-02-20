@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// Backend URL on Vercel
+// Replace with your deployed backend URL
 export const api = axios.create({
   baseURL: "https://vehicle-rental-backend-sandy.vercel.app/api",
 });
