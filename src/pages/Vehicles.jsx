@@ -1,117 +1,88 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import RentalHistory from "./RentalHistory";
 
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
-  const [filters, setFilters] = useState({ type: "", minPrice: "", maxPrice: "", location: "" });
-  const [showHistory, setShowHistory] = useState({}); // track which vehicle history is visible
-
-  const fetchVehicles = async () => {
-    try {
-      const params = {};
-      if (filters.type) params.type = filters.type;
-      if (filters.minPrice) params.minPrice = filters.minPrice;
-      if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-      if (filters.location) params.location = filters.location;
-
-      const res = await api.get("/vehicles", { params });
-      setVehicles(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")));
 
   useEffect(() => {
     fetchVehicles();
   }, []);
 
-  const handleFilter = (e) => {
-    e.preventDefault();
-    fetchVehicles();
+  const fetchVehicles = async () => {
+    try {
+      const res = await api.get("/vehicles");
+      setVehicles(res.data);
+    } catch (err) {
+      console.error("Error fetching vehicles:", err);
+      setVehicles([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleHistory = (id) => {
-    setShowHistory(prev => ({ ...prev, [id]: !prev[id] }));
+  const handleBook = async (vehicleId) => {
+    if (!user) {
+      alert("Please login to book a vehicle.");
+      return;
+    }
+
+    const days = prompt("Enter number of days to book:");
+    if (!days || isNaN(days) || Number(days) < 1) {
+      alert("Invalid number of days");
+      return;
+    }
+
+    try {
+      const res = await api.post("/bookings", {
+        userId: user._id,
+        vehicleId,
+        days: Number(days),
+      });
+      alert(`Booked successfully! Total: $${res.data.totalPrice}`);
+    } catch (err) {
+      console.error("Booking failed:", err);
+      alert(err.response?.data?.message || "Booking failed");
+    }
   };
+
+  if (loading) return <p>Loading vehicles...</p>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Available Vehicles</h1>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {vehicles.map((vehicle) => (
+        <div
+          key={vehicle._id}
+          className="bg-white p-4 rounded shadow flex flex-col"
+        >
+          <img
+            src={vehicle.image}
+            alt={`${vehicle.make} ${vehicle.model}`}
+            className="h-40 w-full object-cover rounded mb-4"
+          />
+          <h2 className="text-xl font-bold mb-1">
+            Make: {vehicle.make} | Model: {vehicle.model}
+          </h2>
+          <p>Category: {vehicle.category}</p>
+          <p>Year: {vehicle.year}</p>
+          <p>Location: {vehicle.location}</p>
+          <p>Price per day: ${vehicle.pricePerDay}</p>
+          <p>
+            Availability:{" "}
+            {vehicle.available ? "Available" : "Not Available"}
+          </p>
 
-      {/* Filter form */}
-      <form className="mb-4 flex flex-col md:flex-row gap-2" onSubmit={handleFilter}>
-        <input
-          type="text"
-          placeholder="Type (Car, Bike, Auto)"
-          className="border p-2 rounded flex-1"
-          value={filters.type}
-          onChange={e => setFilters({ ...filters, type: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Min Price"
-          className="border p-2 rounded"
-          value={filters.minPrice}
-          onChange={e => setFilters({ ...filters, minPrice: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Max Price"
-          className="border p-2 rounded"
-          value={filters.maxPrice}
-          onChange={e => setFilters({ ...filters, maxPrice: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Location"
-          className="border p-2 rounded flex-1"
-          value={filters.location}
-          onChange={e => setFilters({ ...filters, location: e.target.value })}
-        />
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-          Apply Filters
-        </button>
-      </form>
-
-      {/* Vehicle list */}
-      {vehicles.length === 0 ? (
-        <p className="text-center mt-10 text-gray-700">No vehicles found</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {vehicles.map((vehicle) => (
-            <div key={vehicle._id} className="bg-white rounded shadow p-4">
-              {/* Vehicle image */}
-              {vehicle.image && (
-                <img
-                  src={vehicle.image}
-                  alt={`${vehicle.make} ${vehicle.model}`}
-                  className="w-full h-48 object-cover mb-2 rounded"
-                />
-              )}
-
-              {/* Make & Model */}
-              <p><strong>Make:</strong> {vehicle.make}</p>
-              <p><strong>Model:</strong> {vehicle.model}</p>
-
-              {/* Other details */}
-              <p><strong>Year:</strong> {vehicle.year}</p>
-              <p><strong>Price per day:</strong> ${vehicle.pricePerDay}</p>
-              <p><strong>Availability:</strong> {vehicle.available ? "Available" : "Pending Approval"}</p>
-
-              {/* Toggle Rental History */}
-              <button
-                className="mt-2 text-blue-600 hover:underline"
-                onClick={() => toggleHistory(vehicle._id)}
-              >
-                {showHistory[vehicle._id] ? "Hide Rental History" : "View Rental History"}
-              </button>
-
-              {showHistory[vehicle._id] && <RentalHistory vehicleId={vehicle._id} />}
-            </div>
-          ))}
+          {vehicle.available && user && (
+            <button
+              className="mt-4 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+              onClick={() => handleBook(vehicle._id)}
+            >
+              Book
+            </button>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
