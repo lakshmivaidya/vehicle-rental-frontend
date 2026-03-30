@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import VehicleCard from "../components/VehicleCard";
 
-export default function Vehicles() {
+export default function Vehicles({ user }) {
   const [vehicles, setVehicles] = useState([]);
   const [filters, setFilters] = useState({
     category: "",
@@ -37,7 +37,7 @@ export default function Vehicles() {
       <div className="bg-white p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
           name="category"
-          placeholder="Category (Auto, Car, Bike...)"
+          placeholder="Category (Car, Bike, SUV...)"
           className="border p-2 rounded"
           onChange={handleChange}
         />

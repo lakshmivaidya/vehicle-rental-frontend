@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const fetchReviews = async () => {
     try {
@@ -18,30 +22,50 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   }, [vehicle._id]);
 
   const bookVehicle = async () => {
-    try {
-      const days = prompt("For how many days do you want to rent this vehicle?");
-      if (!days || isNaN(days) || Number(days) < 1) {
-        alert("Please enter a valid number of days");
-        return;
-      }
+    if (loading) return; // 🚫 prevent double click
 
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (!user) {
-        alert("Please login first");
-        return;
-      }
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user || !user._id) {
+      toast.error("Please login first");
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      toast.error("Please select both dates");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
+      toast.error("End date cannot be before start date");
+      return;
+    }
+
+    try {
+      setLoading(true);
 
       await api.post("/bookings", {
-        userId: user.id || user._id,
+        userId: user._id,
         vehicleId: vehicle._id,
-        days: Number(days),
+        startDate,
+        endDate,
       });
 
-      alert(`Vehicle booked successfully for ${days} day(s)!`);
+      toast.success("Booking successful ✅");
+
+      setStartDate("");
+      setEndDate("");
       refreshVehicles();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Booking failed");
+
+      // ✅ Only ONE error message
+      toast.error(err.response?.data?.message || "Booking failed ❌");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,6 +75,8 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 flex flex-col">
+      <Toaster position="top-right" />
+
       {vehicle.image && (
         <img
           src={vehicle.image}
@@ -59,33 +85,42 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
         />
       )}
 
-      <p className="font-semibold text-lg mb-1">
-        <span className="text-gray-700">Make:</span> {vehicle.make}
-      </p>
-      <p className="font-semibold text-lg mb-2">
-        <span className="text-gray-700">Model:</span> {vehicle.model}
-      </p>
-
-      <p><span className="text-gray-700 font-semibold">Year:</span> {vehicle.year}</p>
-      <p><span className="text-gray-700 font-semibold">Category:</span> {vehicle.type}</p>
-      <p><span className="text-gray-700 font-semibold">Location:</span> {vehicle.location}</p>
-      <p><span className="text-gray-700 font-semibold">Price per day:</span> ${vehicle.pricePerDay}</p>
-      <p>
-        <span className="text-gray-700 font-semibold">Availability:</span> {vehicle.available ? "Available" : "Not Available"}
-      </p>
+      <p><b>{vehicle.make} {vehicle.model}</b></p>
+      <p>Year: {vehicle.year}</p>
+      <p>Type: {vehicle.type}</p>
+      <p>Location: {vehicle.location}</p>
+      <p>Price: ${vehicle.pricePerDay}</p>
 
       <p className="mt-2 text-yellow-500">
         {reviews.length > 0
-          ? "★".repeat(Math.round(avgRating)) + "☆".repeat(5 - Math.round(avgRating))
-          : "No ratings yet"}
-        {reviews.length > 0 && ` (${avgRating})`}
+          ? "★".repeat(Math.round(avgRating))
+          : "No ratings"}
       </p>
 
+      <div className="mt-4">
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="border p-2 mb-2 w-full"
+        />
+
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="border p-2 w-full"
+        />
+      </div>
+
       <button
-        className="bg-blue-600 text-white p-2 rounded mt-4 hover:bg-blue-700"
         onClick={bookVehicle}
+        disabled={loading}
+        className={`p-2 mt-4 rounded text-white ${
+          loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+        }`}
       >
-        Book Now
+        {loading ? "Booking..." : "Book Now"}
       </button>
     </div>
   );

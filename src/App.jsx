@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Bookings from "./pages/Bookings";
 import AdminDashboard from "./pages/AdminDashboard";
+import ListVehicle from "./pages/ListVehicle"; // NEW
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -34,11 +35,20 @@ export default function App() {
             <Link className="hover:underline" to="/bookings">
               Bookings
             </Link>
+
+            {/* Show only if user is logged in */}
+            {user && (
+              <Link className="hover:underline" to="/list-vehicle">
+                List Vehicle
+              </Link>
+            )}
+
             {user?.role === "admin" && (
               <Link className="hover:underline" to="/admin">
                 Admin Dashboard
               </Link>
             )}
+
             {!user && (
               <>
                 <Link className="hover:underline" to="/login">
@@ -73,6 +83,16 @@ export default function App() {
             <Route path="/bookings" element={<Bookings user={user} />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/register" element={<Register />} />
+            <Route
+              path="/list-vehicle"
+              element={
+                user ? (
+                  <ListVehicle />
+                ) : (
+                  <p className="text-red-600 font-semibold">Please login to list a vehicle</p>
+                )
+              }
+            />
             <Route
               path="/admin"
               element={user?.role === "admin" ? <AdminDashboard /> : <p>Access Denied</p>}
