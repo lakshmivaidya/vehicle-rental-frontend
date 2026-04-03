@@ -10,7 +10,14 @@ export default function Bookings() {
   const fetchBookings = async () => {
     try {
       const res = await api.get("/bookings");
-      setBookings(res.data);
+
+      // Filter bookings for the logged-in user only
+      const userBookings = res.data.filter((b) => {
+        if (b.userId?._id) return b.userId._id === user._id;
+        return b.userId === user._id;
+      });
+
+      setBookings(userBookings);
     } catch (err) {
       console.error("Error fetching bookings:", err);
       toast.error("Failed to fetch bookings");
@@ -21,16 +28,12 @@ export default function Bookings() {
     fetchBookings();
   }, []);
 
-  // ✅ DATE ONLY (NO TIME)
   const formatDate = (date) =>
     date ? new Date(date).toLocaleDateString("en-IN") : "N/A";
 
-  // ✅ REAL TIME (IST)
   const formatDateTime = (date) =>
     date
-      ? new Date(date).toLocaleString("en-IN", {
-          timeZone: "Asia/Kolkata",
-        })
+      ? new Date(date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
       : "N/A";
 
   const handleAction = async (id, action) => {
@@ -86,124 +89,131 @@ export default function Bookings() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">My Bookings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">My Bookings</h1>
 
-      {bookings.length === 0 && <p>No bookings yet.</p>}
+      {bookings.length === 0 && (
+        <p className="text-gray-600 text-lg">No bookings yet.</p>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bookings.map((b) => (
-          <div key={b._id} className="bg-white p-4 rounded shadow flex flex-col">
+          <div
+            key={b._id}
+            className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+          >
             {b.vehicleId?.image && (
               <img
                 src={b.vehicleId.image}
                 alt={`${b.vehicleId.make} ${b.vehicleId.model}`}
-                className="h-48 w-full object-cover rounded mb-3"
+                className="h-48 w-full object-cover"
               />
             )}
 
-            <p className="font-semibold text-lg mb-1">
-              <span className="text-gray-700">Make:</span>{" "}
-              {b.vehicleId?.make}
-            </p>
+            <div className="p-4 flex flex-col gap-2">
+              <p className="font-semibold text-xl text-gray-800">
+                {b.vehicleId?.make} {b.vehicleId?.model}
+              </p>
 
-            <p className="font-semibold text-lg mb-2">
-              <span className="text-gray-700">Model:</span>{" "}
-              {b.vehicleId?.model}
-            </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Booking Dates:</span>{" "}
+                {formatDate(b.startDate)} → {formatDate(b.endDate)}
+              </p>
 
-            {/* ✅ FIXED: DATE ONLY */}
-            <p>
-              <span className="text-gray-700 font-semibold">Booking Dates:</span>{" "}
-              {formatDate(b.startDate)} → {formatDate(b.endDate)}
-            </p>
+              <p className="text-gray-500 text-sm">
+                Booked At: {formatDateTime(b.createdAt)}
+              </p>
 
-            {/* ✅ REAL BOOKING TIME */}
-            <p className="text-sm text-blue-600">
-              Booked At: {formatDateTime(b.createdAt)}
-            </p>
+              <p className="font-semibold text-gray-800">
+                Total: ${b.totalPrice ?? "N/A"}
+              </p>
 
-            <p className="font-semibold">
-              Total: ${b.totalPrice ?? "N/A"}
-            </p>
-
-            <div className="mt-2 flex gap-2 flex-wrap">
-              {user?.role === "user" && b.status === "booked" && (
-                <>
-                  <button
-                    className="bg-green-600 text-white px-4 py-1 rounded"
-                    onClick={() => handleAction(b._id, "pay")}
-                  >
-                    Pay
-                  </button>
-
-                  <button
-                    className="bg-red-600 text-white px-4 py-1 rounded"
-                    onClick={() => handleAction(b._id, "cancel")}
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
-
-              {user?.role === "user" && b.status === "paid" && (
-                <button
-                  className="bg-purple-600 text-white px-4 py-1 rounded"
-                  onClick={() => handleAction(b._id, "complete")}
-                >
-                  Mark as Completed
-                </button>
-              )}
-            </div>
-
-            {/* REVIEW SECTION */}
-            {user?.role === "user" && b.status === "completed" && (
-              <div className="mt-3 flex flex-col gap-1">
-                {b.review?.rating ? (
-                  <div className="bg-gray-100 p-2 rounded">
-                    <p className="text-yellow-600 font-semibold">
-                      ⭐ {b.review.rating}/5
-                    </p>
-                    <p className="text-sm">{b.review.comment}</p>
-                  </div>
-                ) : (
+              <div className="flex gap-2 flex-wrap mt-2">
+                {user?.role === "user" && b.status === "booked" && (
                   <>
-                    <input
-                      type="number"
-                      min="1"
-                      max="5"
-                      placeholder="Rating (1-5)"
-                      className="border p-1 rounded"
-                      value={reviewInputs[b._id]?.rating || ""}
-                      onChange={(e) =>
-                        handleReviewChange(b._id, "rating", e.target.value)
-                      }
-                    />
-
-                    <input
-                      type="text"
-                      placeholder="Comment"
-                      className="border p-1 rounded"
-                      value={reviewInputs[b._id]?.comment || ""}
-                      onChange={(e) =>
-                        handleReviewChange(b._id, "comment", e.target.value)
-                      }
-                    />
-
                     <button
-                      className="bg-yellow-500 text-white px-4 py-1 rounded mt-1"
-                      onClick={() => handleReviewSubmit(b._id)}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                      onClick={() => handleAction(b._id, "pay")}
                     >
-                      Submit Review
+                      Pay
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                      onClick={() => handleAction(b._id, "cancel")}
+                    >
+                      Cancel
                     </button>
                   </>
                 )}
-              </div>
-            )}
 
-            <p className="text-sm text-gray-500 mt-2">
-              Status:{" "}
-              {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-            </p>
+                {user?.role === "user" && b.status === "paid" && (
+                  <button
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                    onClick={() => handleAction(b._id, "complete")}
+                  >
+                    Mark as Completed
+                  </button>
+                )}
+              </div>
+
+              {user?.role === "user" && b.status === "completed" && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {b.review?.rating ? (
+                    <div className="bg-gray-100 p-2 rounded">
+                      <p className="text-yellow-600 font-semibold">
+                        ⭐ {b.review.rating}/5
+                      </p>
+                      <p className="text-gray-700">{b.review.comment}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="number"
+                        min="1"
+                        max="5"
+                        placeholder="Rating (1-5)"
+                        className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        value={reviewInputs[b._id]?.rating || ""}
+                        onChange={(e) =>
+                          handleReviewChange(b._id, "rating", e.target.value)
+                        }
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Comment"
+                        className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        value={reviewInputs[b._id]?.comment || ""}
+                        onChange={(e) =>
+                          handleReviewChange(b._id, "comment", e.target.value)
+                        }
+                      />
+
+                      <button
+                        className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition mt-1"
+                        onClick={() => handleReviewSubmit(b._id)}
+                      >
+                        Submit Review
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <p className="text-sm mt-2">
+                Status:{" "}
+                <span
+                  className={`inline-block px-2 py-1 text-xs font-semibold rounded-full text-white ${
+                    b.status === "booked"
+                      ? "bg-yellow-500"
+                      : b.status === "paid"
+                      ? "bg-purple-600"
+                      : "bg-green-600"
+                  }`}
+                >
+                  {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                </span>
+              </p>
+            </div>
           </div>
         ))}
       </div>
