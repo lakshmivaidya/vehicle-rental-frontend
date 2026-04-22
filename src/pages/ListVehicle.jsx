@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function ListVehicle() {
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     make: "",
     model: "",
@@ -11,15 +12,20 @@ export default function ListVehicle() {
     type: "",
     location: "",
     pricePerDay: "",
-    image: "",
   });
+
+  const [imageFile, setImageFile] = useState(null);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleImageChange = (e) => {
+    setImageFile(e.target.files[0]);
+  };
+
   const handleSubmit = async () => {
-    // Basic validation
+    // Validation
     if (
       !form.make ||
       !form.model ||
@@ -33,16 +39,46 @@ export default function ListVehicle() {
     }
 
     try {
-      const res = await api.post("/vehicles", {
-        ...form,
-        year: Number(form.year),
-        pricePerDay: Number(form.pricePerDay),
+      // ✅ Get logged in user
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!user || !user._id) {
+        alert("Please login first");
+        return;
+      }
+
+      // ✅ Use FormData for file upload
+      const formData = new FormData();
+
+      formData.append("make", form.make);
+      formData.append("model", form.model);
+      formData.append("year", Number(form.year));
+      formData.append("type", form.type);
+      formData.append("location", form.location);
+      formData.append("pricePerDay", Number(form.pricePerDay));
+
+      // 🔥 CRITICAL (DO NOT REMOVE)
+      formData.append("userId", user._id);
+
+      // ✅ Image file
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      await api.post("/vehicles", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
+
       alert("Vehicle listed successfully!");
-      navigate("/"); // redirect to Vehicles page
+      navigate("/");
     } catch (err) {
       console.error(err);
-      alert("Failed to list vehicle: " + (err.response?.data?.message || err.message));
+      alert(
+        "Failed to list vehicle: " +
+          (err.response?.data?.message || err.message)
+      );
     }
   };
 
@@ -57,6 +93,7 @@ export default function ListVehicle() {
         onChange={handleChange}
         className="border p-2 w-full mb-2 rounded"
       />
+
       <input
         name="model"
         placeholder="Model"
@@ -64,6 +101,7 @@ export default function ListVehicle() {
         onChange={handleChange}
         className="border p-2 w-full mb-2 rounded"
       />
+
       <input
         name="year"
         placeholder="Year"
@@ -72,6 +110,7 @@ export default function ListVehicle() {
         onChange={handleChange}
         className="border p-2 w-full mb-2 rounded"
       />
+
       <input
         name="type"
         placeholder="Category/Type (Car, Bike, SUV...)"
@@ -79,6 +118,7 @@ export default function ListVehicle() {
         onChange={handleChange}
         className="border p-2 w-full mb-2 rounded"
       />
+
       <input
         name="location"
         placeholder="Location"
@@ -86,6 +126,7 @@ export default function ListVehicle() {
         onChange={handleChange}
         className="border p-2 w-full mb-2 rounded"
       />
+
       <input
         name="pricePerDay"
         placeholder="Price per Day"
@@ -94,17 +135,18 @@ export default function ListVehicle() {
         onChange={handleChange}
         className="border p-2 w-full mb-2 rounded"
       />
+
+      {/* ✅ FILE UPLOAD INSTEAD OF URL */}
       <input
-        name="image"
-        placeholder="Image URL (optional)"
-        value={form.image}
-        onChange={handleChange}
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
         className="border p-2 w-full mb-2 rounded"
       />
 
       <button
         onClick={handleSubmit}
-        className="bg-blue-600 text-white p-2 w-full rounded hover:bg-blue-700 mt-2"
+        className="bg-blue-600 text-white p-2 w-full rounded mt-2 transition transform hover:bg-blue-700 hover:scale-[1.02] active:scale-95"
       >
         List Vehicle
       </button>

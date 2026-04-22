@@ -1,123 +1,227 @@
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom"; 
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+} from "react-router-dom";
 import { useState, useEffect } from "react";
+
 import Vehicles from "./pages/Vehicles";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Bookings from "./pages/Bookings";
 import AdminDashboard from "./pages/AdminDashboard";
 import ListVehicle from "./pages/ListVehicle";
+import Profile from "./pages/Profile";
+import AnimatedBackground from "./components/AnimatedBackground";
+
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on page load
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (err) {
+      localStorage.removeItem("user");
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const logout = () => {
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     setUser(null);
-    alert("Logged out successfully");
   };
 
-  // Component to redirect logged-in users away from login/register
   const AuthRedirect = ({ children }) => {
+    if (loading) return null;
+
     if (user) {
-      return <Navigate to={user.role === "admin" ? "/admin" : "/"} replace />;
+      return (
+        <Navigate
+          to={user.role === "admin" ? "/admin" : "/"}
+        />
+      );
     }
+
     return children;
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-700">
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <Router>
-      {/* Full app background */}
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100">
-        {/* Navigation */}
-        <nav className="bg-white shadow p-4 flex gap-4 justify-between items-center">
-          <div className="flex gap-4">
+      <Toaster position="top-right" />
+      <AnimatedBackground />
+
+      <div className="min-h-screen relative text-gray-800">
+        <nav className="bg-white/90 backdrop-blur-md border-b shadow-sm px-6 py-3 flex justify-between items-center">
+          <div className="flex gap-6 items-center font-medium text-sm">
             {user?.role === "admin" ? (
-              <Link className="hover:text-blue-600 font-semibold" to="/admin">
+              <Link
+                to="/admin"
+                className="hover:text-blue-600 transition"
+              >
                 Admin Dashboard
               </Link>
-            ) : (
+            ) : user ? (
               <>
-                {user && (
-                  <Link className="hover:text-blue-600 font-semibold" to="/">
-                    Vehicles
-                  </Link>
-                )}
-                {user && (
-                  <Link className="hover:text-blue-600 font-semibold" to="/bookings">
-                    My Bookings
-                  </Link>
-                )}
-                {user && (
-                  <Link className="hover:text-blue-600 font-semibold" to="/list-vehicle">
-                    List Vehicle
-                  </Link>
-                )}
+                <Link
+                  to="/"
+                  className="hover:text-blue-600 transition"
+                >
+                  Vehicles
+                </Link>
+                <Link
+                  to="/bookings"
+                  className="hover:text-blue-600 transition"
+                >
+                  Bookings
+                </Link>
+                <Link
+                  to="/list-vehicle"
+                  className="hover:text-blue-600 transition"
+                >
+                  List Vehicle
+                </Link>
+                <Link
+                  to="/profile"
+                  className="hover:text-blue-600 transition"
+                >
+                  Profile
+                </Link>
               </>
-            )}
+            ) : null}
+
             {!user && (
               <>
-                <Link className="hover:text-blue-600 font-semibold" to="/login">
+                <Link
+                  to="/login"
+                  className="hover:text-blue-600 transition"
+                >
                   Login
                 </Link>
-                <Link className="hover:text-blue-600 font-semibold" to="/register">
+                <Link
+                  to="/register"
+                  className="hover:text-blue-600 transition"
+                >
                   Register
                 </Link>
               </>
             )}
           </div>
 
-          {user && (
-            <div className="flex gap-2 items-center">
-              <span className="font-semibold text-gray-700">
-                Logged in as {user.role}
+          <div className="flex items-center gap-4">
+            {user && (
+              <span className="text-sm text-gray-600">
+                Logged in as{" "}
+                <b className="text-gray-900">
+                  {user.name ? user.name : user.email}
+                </b>
               </span>
+            )}
+
+            {user && (
               <button
-                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
                 onClick={logout}
+                className="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded
+                           text-white text-sm transition transform
+                           hover:scale-105 active:scale-95 shadow-md"
               >
                 Logout
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </nav>
 
-        {/* Page Content */}
         <div className="p-6">
           <Routes>
             <Route
               path="/"
-              element={user && user.role !== "admin" ? <Vehicles user={user} /> : <Navigate to="/login" />}
+              element={
+                user && user.role !== "admin" ? (
+                  <Vehicles user={user} />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
             />
+
             <Route
               path="/bookings"
-              element={user && user.role !== "admin" ? <Bookings user={user} /> : <Navigate to="/login" />}
+              element={
+                user ? (
+                  <Bookings user={user} />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
             />
+
             <Route
               path="/list-vehicle"
-              element={user && user.role !== "admin" ? <ListVehicle /> : <Navigate to="/login" />}
+              element={
+                user ? (
+                  <ListVehicle user={user} />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
             />
+
+            <Route
+              path="/profile"
+              element={
+                user ? (
+                  <Profile user={user} />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+
             <Route
               path="/admin"
-              element={user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/login" />}
+              element={
+                user?.role === "admin" ? (
+                  <AdminDashboard user={user} />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
             />
+
             <Route
               path="/login"
-              element={<AuthRedirect><Login setUser={setUser} /></AuthRedirect>}
+              element={
+                <AuthRedirect>
+                  <Login setUser={setUser} />
+                </AuthRedirect>
+              }
             />
+
             <Route
               path="/register"
-              element={<AuthRedirect><Register /></AuthRedirect>}
-            />
-            <Route
-              path="*"
-              element={<Navigate to={user ? (user.role === "admin" ? "/admin" : "/") : "/login"} />}
+              element={
+                <AuthRedirect>
+                  <Register />
+                </AuthRedirect>
+              }
             />
           </Routes>
         </div>

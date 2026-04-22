@@ -4,34 +4,34 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login({ setUser }) {
   const [form, setForm] = useState({ email: "", password: "" });
-  const [role, setRole] = useState("user"); // Default role
+  const [role, setRole] = useState("user");
   const navigate = useNavigate();
 
   const submit = async () => {
     try {
       const res = await api.post("/auth/login", form);
 
-      // Check if role matches
       if (res.data.user.role !== role) {
-        alert(`Login failed: Credentials do not match selected role (${role})`);
+        alert(
+          `Login failed: Credentials do not match selected role (${role})`
+        );
         return;
       }
 
-      // Save token and user info in localStorage
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // Update App state
       setUser(res.data.user);
 
-      // Show role-based alert
       alert(`Logged in successfully as ${res.data.user.role}`);
 
-      // Redirect to vehicles page
       navigate("/vehicles");
     } catch (err) {
       console.error(err);
-      alert("Login failed: " + (err.response?.data?.message || err.message));
+      alert(
+        "Login failed: " +
+          (err.response?.data?.message || err.message)
+      );
     }
   };
 
@@ -43,7 +43,9 @@ export default function Login({ setUser }) {
         className="border p-2 w-full mb-2"
         placeholder="Email"
         value={form.email}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        onChange={(e) =>
+          setForm({ ...form, email: e.target.value })
+        }
       />
 
       <input
@@ -51,10 +53,11 @@ export default function Login({ setUser }) {
         placeholder="Password"
         type="password"
         value={form.password}
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
+        onChange={(e) =>
+          setForm({ ...form, password: e.target.value })
+        }
       />
 
-      {/* Role Dropdown */}
       <select
         className="border p-2 w-full mb-2"
         value={role}
@@ -65,7 +68,9 @@ export default function Login({ setUser }) {
       </select>
 
       <button
-        className="bg-blue-600 text-white p-2 w-full rounded hover:bg-blue-700"
+        className="bg-blue-600 text-white p-2 w-full rounded
+                   transition transform hover:bg-blue-700
+                   hover:scale-105 active:scale-95 shadow-md"
         onClick={submit}
       >
         Login

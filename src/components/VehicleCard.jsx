@@ -1,33 +1,74 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api } from "../api";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+
+const API_BASE = "http://localhost:5000";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
+  const isBookingRef = useRef(false);
+
+  const [editData, setEditData] = useState({
+    make: vehicle.make || "",
+    model: vehicle.model || "",
+    year: vehicle.year || "",
+    type: vehicle.type || "",
+    location: vehicle.location || "",
+    pricePerDay: vehicle.pricePerDay || "",
+  });
+
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  const imageUrl = vehicle.image
+    ? vehicle.image.startsWith("http")
+      ? vehicle.image
+      : `http://localhost:5000${
+          vehicle.image.startsWith("/") ? "" : "/"
+        }${vehicle.image}`
+    : "https://via.placeholder.com/300";
+
+  // =========================
+  // FETCH REVIEWS
+  // =========================
   const fetchReviews = async () => {
     try {
       const res = await api.get(`/reviews/${vehicle._id}`);
-      setReviews(res.data);
+      setReviews(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
+      setReviews([]);
     }
   };
 
   useEffect(() => {
-    fetchReviews();
-  }, [vehicle._id]);
+    if (vehicle?._id) fetchReviews();
+  }, [vehicle?._id]);
 
+  const vehicleOwnerId =
+    typeof vehicle.userId === "string"
+      ? vehicle.userId
+      : vehicle.userId?._id;
+
+  const isOwnVehicle = user?._id && vehicleOwnerId === user._id;
+
+  // =========================
+  // BOOK VEHICLE
+  // =========================
   const bookVehicle = async () => {
-    if (loading) return; // 🚫 prevent double click
+    if (loading || isBookingRef.current) return;
 
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    if (!user || !user._id) {
+    if (!user?._id) {
       toast.error("Please login first");
+      return;
+    }
+
+    if (isOwnVehicle) {
+      toast.error("You cannot book your own vehicle");
       return;
     }
 
@@ -36,92 +77,272 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
       return;
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (start > end) {
-      toast.error("End date cannot be before start date");
-      return;
-    }
-
     try {
+      isBookingRef.current = true;
       setLoading(true);
 
-      await api.post("/bookings", {
+      const res = await api.post("/bookings", {
         userId: user._id,
         vehicleId: vehicle._id,
         startDate,
         endDate,
       });
 
-      toast.success("Booking successful ✅");
+      toast.success(res.data?.message || "Booking successful");
 
       setStartDate("");
       setEndDate("");
-      refreshVehicles();
+
+      refreshVehicles?.();
     } catch (err) {
       console.error(err);
-
-      // ✅ Only ONE error message
-      toast.error(err.response?.data?.message || "Booking failed ❌");
+      toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setLoading(false);
+
+      setTimeout(() => {
+        isBookingRef.current = false;
+      }, 300);
     }
   };
 
-  const avgRating = reviews.length
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+  // =========================
+  // UPDATE VEHICLE
+  // =========================
+  const updateVehicle = async () => {
+    try {
+      await api.put(`/vehicles/${vehicle._id}`, editData);
+      toast.success("Vehicle updated");
+      setIsEditing(false);
+      refreshVehicles?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Update failed");
+    }
+  };
+
+  // =========================
+  // UNLIST VEHICLE
+  // =========================
+  const unlistVehicle = async () => {
+    const ok = window.confirm(
+      "Are you sure you want to unlist this vehicle?"
+    );
+    if (!ok) return;
+
+    try {
+      await api.patch(`/vehicles/${vehicle._id}/unlist`);
+      toast.success("Vehicle unlisted");
+      refreshVehicles?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to unlist");
+    }
+  };
+
+  // =========================
+  // RELIST VEHICLE
+  // =========================
+  const relistVehicle = async () => {
+    try {
+      await api.patch(`/vehicles/${vehicle._id}/relist`);
+      toast.success("Vehicle relisted");
+      refreshVehicles?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to relist");
+    }
+  };
+
+  // =========================
+  // ✅ FIXED SAFE AVERAGE (NO 3.3 BUG FROM FRONTEND)
+  // =========================
+  const validRatings = reviews
+  .map(r => Number(r.rating))
+  .filter(r => !isNaN(r));
+
+  const avgRating =
+  validRatings.length > 0
+    ? validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length
     : 0;
 
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6 flex flex-col">
-      <Toaster position="top-right" />
+  const today = new Date().toISOString().split("T")[0];
 
-      {vehicle.image && (
+  // =========================
+  // UNLISTED STATE
+  // =========================
+  if (vehicle.available === false) {
+    return (
+      <div className="bg-gray-200 p-4 rounded-xl shadow transition hover:scale-[1.02]">
         <img
-          src={vehicle.image}
-          alt={`${vehicle.make} ${vehicle.model}`}
-          className="h-48 w-full object-cover rounded mb-4"
-        />
-      )}
-
-      <p><b>{vehicle.make} {vehicle.model}</b></p>
-      <p>Year: {vehicle.year}</p>
-      <p>Type: {vehicle.type}</p>
-      <p>Location: {vehicle.location}</p>
-      <p>Price: ${vehicle.pricePerDay}</p>
-
-      <p className="mt-2 text-yellow-500">
-        {reviews.length > 0
-          ? "★".repeat(Math.round(avgRating))
-          : "No ratings"}
-      </p>
-
-      <div className="mt-4">
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="border p-2 mb-2 w-full"
+          src={imageUrl}
+          className="h-40 w-full object-cover rounded mb-2"
+          alt="vehicle"
         />
 
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="border p-2 w-full"
-        />
+        <p className="font-semibold">This vehicle is unlisted</p>
+
+        {isOwnVehicle && (
+          <button
+            onClick={relistVehicle}
+            className="mt-2 bg-green-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
+          >
+            Relist Vehicle
+          </button>
+        )}
       </div>
+    );
+  }
 
-      <button
-        onClick={bookVehicle}
-        disabled={loading}
-        className={`p-2 mt-4 rounded text-white ${
-          loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-        }`}
-      >
-        {loading ? "Booking..." : "Book Now"}
-      </button>
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6 flex flex-col transition transform hover:scale-[1.02] hover:shadow-xl">
+
+      {/* IMAGE */}
+      <img
+        src={imageUrl}
+        alt={`${vehicle.make} ${vehicle.model}`}
+        className="h-48 w-full object-cover rounded mb-4"
+      />
+
+      {/* EDIT MODE */}
+      {isEditing ? (
+        <div className="space-y-2">
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.make}
+            onChange={(e) =>
+              setEditData({ ...editData, make: e.target.value })
+            }
+            placeholder="Make"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.model}
+            onChange={(e) =>
+              setEditData({ ...editData, model: e.target.value })
+            }
+            placeholder="Model"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.year}
+            onChange={(e) =>
+              setEditData({ ...editData, year: e.target.value })
+            }
+            placeholder="Year"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.type}
+            onChange={(e) =>
+              setEditData({ ...editData, type: e.target.value })
+            }
+            placeholder="Type"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.location}
+            onChange={(e) =>
+              setEditData({ ...editData, location: e.target.value })
+            }
+            placeholder="Location"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.pricePerDay}
+            onChange={(e) =>
+              setEditData({ ...editData, pricePerDay: e.target.value })
+            }
+            placeholder="Price"
+          />
+
+          <div className="flex gap-2">
+            <button
+              onClick={updateVehicle}
+              className="bg-green-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
+            >
+              Save
+            </button>
+
+            <button
+              onClick={() => setIsEditing(false)}
+              className="bg-gray-500 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p><b>Make:</b> {vehicle.make}</p>
+          <p><b>Model:</b> {vehicle.model}</p>
+          <p><b>Year:</b> {vehicle.year}</p>
+          <p><b>Type:</b> {vehicle.type}</p>
+          <p><b>Location:</b> {vehicle.location}</p>
+          <p><b>Price:</b> ${vehicle.pricePerDay}</p>
+
+          <p className="text-yellow-500 font-semibold mt-1">
+            {reviews.length ? `★ ${avgRating.toFixed(1)}` : "No ratings"}
+          </p>
+
+          {isOwnVehicle && (
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={unlistVehicle}
+                className="bg-red-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
+              >
+                Unlist
+              </button>
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              min={today}
+              className="border p-2 rounded"
+            />
+
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate || today}
+              className="border p-2 rounded"
+            />
+          </div>
+
+          <button
+            onClick={bookVehicle}
+            disabled={loading || isOwnVehicle}
+            className={`p-2 mt-3 rounded text-white transition transform active:scale-95 hover:scale-105 ${
+              loading || isOwnVehicle
+                ? "bg-gray-400"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            {isOwnVehicle
+              ? "Cannot book your vehicle"
+              : loading
+              ? "Booking..."
+              : "Book Now"}
+          </button>
+        </>
+      )}
     </div>
   );
 }

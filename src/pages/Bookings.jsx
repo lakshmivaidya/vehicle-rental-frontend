@@ -11,7 +11,6 @@ export default function Bookings() {
     try {
       const res = await api.get("/bookings");
 
-      // Filter bookings for the logged-in user only
       const userBookings = res.data.filter((b) => {
         if (b.userId?._id) return b.userId._id === user._id;
         return b.userId === user._id;
@@ -33,7 +32,9 @@ export default function Bookings() {
 
   const formatDateTime = (date) =>
     date
-      ? new Date(date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      ? new Date(date).toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+        })
       : "N/A";
 
   const handleAction = async (id, action) => {
@@ -41,6 +42,7 @@ export default function Bookings() {
       if (action === "pay") await api.post(`/bookings/pay/${id}`);
       if (action === "cancel") await api.delete(`/bookings/cancel/${id}`);
       if (action === "complete") await api.post(`/bookings/complete/${id}`);
+
       toast.success(`Booking ${action} successful`);
       fetchBookings();
     } catch (err) {
@@ -89,7 +91,9 @@ export default function Bookings() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">My Bookings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">
+        My Bookings
+      </h1>
 
       {bookings.length === 0 && (
         <p className="text-gray-600 text-lg">No bookings yet.</p>
@@ -101,11 +105,19 @@ export default function Bookings() {
             key={b._id}
             className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
           >
+            {/* IMAGE */}
             {b.vehicleId?.image && (
               <img
-                src={b.vehicleId.image}
+                src={
+                  b.vehicleId.image.startsWith("http")
+                    ? b.vehicleId.image
+                    : `http://localhost:5000${b.vehicleId.image}`
+                }
                 alt={`${b.vehicleId.make} ${b.vehicleId.model}`}
                 className="h-48 w-full object-cover"
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/300";
+                }}
               />
             )}
 
@@ -127,17 +139,23 @@ export default function Bookings() {
                 Total: ${b.totalPrice ?? "N/A"}
               </p>
 
+              {/* ACTION BUTTONS */}
               <div className="flex gap-2 flex-wrap mt-2">
                 {user?.role === "user" && b.status === "booked" && (
                   <>
                     <button
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                      className="px-4 py-2 bg-green-600 text-white rounded
+                                 transition transform hover:bg-green-700
+                                 hover:scale-105 active:scale-95 shadow-md"
                       onClick={() => handleAction(b._id, "pay")}
                     >
                       Pay
                     </button>
+
                     <button
-                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                      className="px-4 py-2 bg-red-600 text-white rounded
+                                 transition transform hover:bg-red-700
+                                 hover:scale-105 active:scale-95 shadow-md"
                       onClick={() => handleAction(b._id, "cancel")}
                     >
                       Cancel
@@ -147,7 +165,9 @@ export default function Bookings() {
 
                 {user?.role === "user" && b.status === "paid" && (
                   <button
-                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                    className="px-4 py-2 bg-purple-600 text-white rounded
+                               transition transform hover:bg-purple-700
+                               hover:scale-105 active:scale-95 shadow-md"
                     onClick={() => handleAction(b._id, "complete")}
                   >
                     Mark as Completed
@@ -155,6 +175,7 @@ export default function Bookings() {
                 )}
               </div>
 
+              {/* REVIEW SECTION */}
               {user?.role === "user" && b.status === "completed" && (
                 <div className="mt-3 flex flex-col gap-2">
                   {b.review?.rating ? (
@@ -162,7 +183,9 @@ export default function Bookings() {
                       <p className="text-yellow-600 font-semibold">
                         ⭐ {b.review.rating}/5
                       </p>
-                      <p className="text-gray-700">{b.review.comment}</p>
+                      <p className="text-gray-700">
+                        {b.review.comment}
+                      </p>
                     </div>
                   ) : (
                     <>
@@ -171,25 +194,35 @@ export default function Bookings() {
                         min="1"
                         max="5"
                         placeholder="Rating (1-5)"
-                        className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        className="border p-2 rounded focus:ring-2 focus:ring-yellow-400"
                         value={reviewInputs[b._id]?.rating || ""}
                         onChange={(e) =>
-                          handleReviewChange(b._id, "rating", e.target.value)
+                          handleReviewChange(
+                            b._id,
+                            "rating",
+                            e.target.value
+                          )
                         }
                       />
 
                       <input
                         type="text"
                         placeholder="Comment"
-                        className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        className="border p-2 rounded focus:ring-2 focus:ring-yellow-400"
                         value={reviewInputs[b._id]?.comment || ""}
                         onChange={(e) =>
-                          handleReviewChange(b._id, "comment", e.target.value)
+                          handleReviewChange(
+                            b._id,
+                            "comment",
+                            e.target.value
+                          )
                         }
                       />
 
                       <button
-                        className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition mt-1"
+                        className="px-4 py-2 bg-yellow-500 text-white rounded
+                                   transition transform hover:bg-yellow-600
+                                   hover:scale-105 active:scale-95 shadow-md"
                         onClick={() => handleReviewSubmit(b._id)}
                       >
                         Submit Review
@@ -199,6 +232,7 @@ export default function Bookings() {
                 </div>
               )}
 
+              {/* STATUS */}
               <p className="text-sm mt-2">
                 Status:{" "}
                 <span
