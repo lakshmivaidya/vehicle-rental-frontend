@@ -111,7 +111,7 @@ export default function Bookings() {
                 src={
                   b.vehicleId.image.startsWith("http")
                     ? b.vehicleId.image
-                    : `http://localhost:5000${b.vehicleId.image}`
+                    : `https://vehicle-rental-backend-mu.vercel.app/api${b.vehicleId.image}`
                 }
                 alt={`${b.vehicleId.make} ${b.vehicleId.model}`}
                 className="h-48 w-full object-cover"

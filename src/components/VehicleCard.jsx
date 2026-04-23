@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { api } from "../api";
 import toast from "react-hot-toast";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://vehicle-rental-backend-mu.vercel.app/api";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
@@ -27,7 +27,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   const imageUrl = vehicle.image
     ? vehicle.image.startsWith("http")
       ? vehicle.image
-      : `http://localhost:5000${
+      : `https://vehicle-rental-backend-mu.vercel.app/api${
           vehicle.image.startsWith("/") ? "" : "/"
         }${vehicle.image}`
     : "https://via.placeholder.com/300";
