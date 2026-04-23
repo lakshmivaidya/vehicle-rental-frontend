@@ -14,29 +14,35 @@ export default function Vehicles({ user }) {
   });
 
   // =========================
-  // FETCH VEHICLES (STABLE + SAFE)
+  // FETCH VEHICLES (FIXED)
   // =========================
   const fetchVehicles = useCallback(async () => {
     try {
       setLoading(true);
 
-      const queryParams = {};
+      const params = {};
 
-      if (filters.category?.trim())
-        queryParams.category = filters.category.trim();
+      if (filters.category?.trim()) {
+        params.category = filters.category.trim();
+      }
 
-      if (filters.location?.trim())
-        queryParams.location = filters.location.trim();
+      if (filters.location?.trim()) {
+        params.location = filters.location.trim();
+      }
 
-      if (filters.minPrice !== "")
-        queryParams.minPrice = filters.minPrice;
+      if (filters.minPrice !== "") {
+        params.minPrice = filters.minPrice;
+      }
 
-      if (filters.maxPrice !== "")
-        queryParams.maxPrice = filters.maxPrice;
+      if (filters.maxPrice !== "") {
+        params.maxPrice = filters.maxPrice;
+      }
 
-      const query = new URLSearchParams(queryParams).toString();
+      // ✅ IMPORTANT FIX: avoid calling /vehicles?
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `/vehicles?${queryString}` : "/vehicles";
 
-      const res = await api.get(`/vehicles?${query}`);
+      const res = await api.get(url);
 
       setVehicles(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -75,7 +81,6 @@ export default function Vehicles({ user }) {
       maxPrice: "",
     });
 
-    // refresh after reset
     setTimeout(() => {
       fetchVehicles();
     }, 0);
@@ -84,13 +89,12 @@ export default function Vehicles({ user }) {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
 
-      {/* HEADER */}
       <h1 className="text-4xl font-extrabold mb-8 text-center text-gray-800">
         Available Vehicles
       </h1>
 
       {/* FILTER PANEL */}
-      <div className="backdrop-blur-md bg-white/70 border border-white/40 shadow-xl rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 transition-all">
+      <div className="backdrop-blur-md bg-white/70 border border-white/40 shadow-xl rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
 
         <input
           name="category"
