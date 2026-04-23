@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { api } from "../api";
 import toast from "react-hot-toast";
 
-const API_BASE = "https://vehicle-rental-backend-mu.vercel.app/api";
+const FALLBACK_IMAGE = "https://via.placeholder.com/300";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
@@ -24,13 +24,17 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const imageUrl = vehicle.image
-    ? vehicle.image.startsWith("http")
-      ? vehicle.image
-      : `https://vehicle-rental-backend-mu.vercel.app/api${
-          vehicle.image.startsWith("/") ? "" : "/"
-        }${vehicle.image}`
-    : "https://via.placeholder.com/300";
+  // =========================
+  // IMAGE FIX (Vercel + future Cloudinary safe)
+  // =========================
+  const imageUrl =
+    vehicle.image && typeof vehicle.image === "string"
+      ? vehicle.image.startsWith("http")
+        ? vehicle.image
+        : `https://vehicle-rental-backend-mu.vercel.app/api${
+            vehicle.image.startsWith("/") ? "" : "/"
+          }${vehicle.image}`
+      : FALLBACK_IMAGE;
 
   // =========================
   // FETCH REVIEWS
@@ -99,7 +103,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
       toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setLoading(false);
-
       setTimeout(() => {
         isBookingRef.current = false;
       }, 300);
@@ -155,16 +158,16 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   };
 
   // =========================
-  // ✅ FIXED SAFE AVERAGE (NO 3.3 BUG FROM FRONTEND)
+  // SAFE AVERAGE RATING
   // =========================
   const validRatings = reviews
-  .map(r => Number(r.rating))
-  .filter(r => !isNaN(r));
+    .map((r) => Number(r.rating))
+    .filter((r) => !isNaN(r));
 
   const avgRating =
-  validRatings.length > 0
-    ? validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length
-    : 0;
+    validRatings.length > 0
+      ? validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length
+      : 0;
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -202,6 +205,9 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
         src={imageUrl}
         alt={`${vehicle.make} ${vehicle.model}`}
         className="h-48 w-full object-cover rounded mb-4"
+        onError={(e) => {
+          e.target.src = FALLBACK_IMAGE;
+        }}
       />
 
       {/* EDIT MODE */}

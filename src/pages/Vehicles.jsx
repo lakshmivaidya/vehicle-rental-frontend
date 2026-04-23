@@ -4,6 +4,8 @@ import VehicleCard from "../components/VehicleCard";
 
 export default function Vehicles({ user }) {
   const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [filters, setFilters] = useState({
     category: "",
     location: "",
@@ -12,16 +14,18 @@ export default function Vehicles({ user }) {
   });
 
   // =========================
-  // FIX: STABLE FETCH FUNCTION
+  // FETCH VEHICLES (STABLE + SAFE)
   // =========================
   const fetchVehicles = useCallback(async () => {
     try {
+      setLoading(true);
+
       const queryParams = {};
 
-      if (filters.category.trim())
+      if (filters.category?.trim())
         queryParams.category = filters.category.trim();
 
-      if (filters.location.trim())
+      if (filters.location?.trim())
         queryParams.location = filters.location.trim();
 
       if (filters.minPrice !== "")
@@ -34,9 +38,12 @@ export default function Vehicles({ user }) {
 
       const res = await api.get(`/vehicles?${query}`);
 
-      setVehicles(res.data || []);
+      setVehicles(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Fetch vehicles error:", err);
+      setVehicles([]);
+    } finally {
+      setLoading(false);
     }
   }, [filters]);
 
@@ -68,7 +75,7 @@ export default function Vehicles({ user }) {
       maxPrice: "",
     });
 
-    // force refresh after reset
+    // refresh after reset
     setTimeout(() => {
       fetchVehicles();
     }, 0);
@@ -124,11 +131,12 @@ export default function Vehicles({ user }) {
 
           <button
             onClick={fetchVehicles}
+            disabled={loading}
             className="bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold
                        transition transform active:scale-95 hover:scale-105
-                       hover:bg-blue-700 shadow-md"
+                       hover:bg-blue-700 shadow-md disabled:opacity-60"
           >
-            Apply Filters
+            {loading ? "Loading..." : "Apply Filters"}
           </button>
 
           <button
@@ -143,7 +151,11 @@ export default function Vehicles({ user }) {
       </div>
 
       {/* VEHICLE GRID */}
-      {vehicles.length === 0 ? (
+      {loading ? (
+        <p className="text-center text-gray-600 text-lg mt-6">
+          Loading vehicles...
+        </p>
+      ) : vehicles.length === 0 ? (
         <p className="text-center text-gray-600 text-lg mt-6">
           No vehicles found.
         </p>

@@ -89,6 +89,19 @@ export default function Bookings() {
     }
   };
 
+  // ==============================
+  // IMAGE HANDLER (SAFE ADDITION)
+  // ==============================
+  const getVehicleImage = (image) => {
+    if (!image) return "https://via.placeholder.com/300";
+
+    // already cloudinary or external
+    if (image.startsWith("http")) return image;
+
+    // fallback (legacy support only)
+    return `https://vehicle-rental-backend-mu.vercel.app/api${image}`;
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">
@@ -105,15 +118,11 @@ export default function Bookings() {
             key={b._id}
             className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
           >
-            {/* IMAGE */}
+            {/* IMAGE (ENHANCED SAFE VERSION) */}
             {b.vehicleId?.image && (
               <img
-                src={
-                  b.vehicleId.image.startsWith("http")
-                    ? b.vehicleId.image
-                    : `https://vehicle-rental-backend-mu.vercel.app/api${b.vehicleId.image}`
-                }
-                alt={`${b.vehicleId.make} ${b.vehicleId.model}`}
+                src={getVehicleImage(b.vehicleId.image)}
+                alt={`${b.vehicleId?.make} ${b.vehicleId?.model}`}
                 className="h-48 w-full object-cover"
                 onError={(e) => {
                   e.target.src = "https://via.placeholder.com/300";
@@ -144,18 +153,14 @@ export default function Bookings() {
                 {user?.role === "user" && b.status === "booked" && (
                   <>
                     <button
-                      className="px-4 py-2 bg-green-600 text-white rounded
-                                 transition transform hover:bg-green-700
-                                 hover:scale-105 active:scale-95 shadow-md"
+                      className="px-4 py-2 bg-green-600 text-white rounded"
                       onClick={() => handleAction(b._id, "pay")}
                     >
                       Pay
                     </button>
 
                     <button
-                      className="px-4 py-2 bg-red-600 text-white rounded
-                                 transition transform hover:bg-red-700
-                                 hover:scale-105 active:scale-95 shadow-md"
+                      className="px-4 py-2 bg-red-600 text-white rounded"
                       onClick={() => handleAction(b._id, "cancel")}
                     >
                       Cancel
@@ -165,9 +170,7 @@ export default function Bookings() {
 
                 {user?.role === "user" && b.status === "paid" && (
                   <button
-                    className="px-4 py-2 bg-purple-600 text-white rounded
-                               transition transform hover:bg-purple-700
-                               hover:scale-105 active:scale-95 shadow-md"
+                    className="px-4 py-2 bg-purple-600 text-white rounded"
                     onClick={() => handleAction(b._id, "complete")}
                   >
                     Mark as Completed
@@ -175,7 +178,7 @@ export default function Bookings() {
                 )}
               </div>
 
-              {/* REVIEW SECTION */}
+              {/* REVIEW SECTION (UNCHANGED) */}
               {user?.role === "user" && b.status === "completed" && (
                 <div className="mt-3 flex flex-col gap-2">
                   {b.review?.rating ? (
@@ -220,9 +223,7 @@ export default function Bookings() {
                       />
 
                       <button
-                        className="px-4 py-2 bg-yellow-500 text-white rounded
-                                   transition transform hover:bg-yellow-600
-                                   hover:scale-105 active:scale-95 shadow-md"
+                        className="px-4 py-2 bg-yellow-500 text-white rounded"
                         onClick={() => handleReviewSubmit(b._id)}
                       >
                         Submit Review
@@ -232,20 +233,9 @@ export default function Bookings() {
                 </div>
               )}
 
-              {/* STATUS */}
               <p className="text-sm mt-2">
                 Status:{" "}
-                <span
-                  className={`inline-block px-2 py-1 text-xs font-semibold rounded-full text-white ${
-                    b.status === "booked"
-                      ? "bg-yellow-500"
-                      : b.status === "paid"
-                      ? "bg-purple-600"
-                      : "bg-green-600"
-                  }`}
-                >
-                  {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-                </span>
+                <span className="font-semibold">{b.status}</span>
               </p>
             </div>
           </div>
