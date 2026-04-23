@@ -37,7 +37,12 @@ export default function Bookings() {
         })
       : "N/A";
 
-  const handleAction = async (id, action) => {
+  // =========================
+  // FIX 1: PREVENT PAGE RELOAD
+  // =========================
+  const handleAction = async (e, id, action) => {
+    if (e) e.preventDefault(); // 🔥 prevents accidental reload/navigation
+
     try {
       if (action === "pay") await api.post(`/bookings/pay/${id}`);
       if (action === "cancel") await api.delete(`/bookings/cancel/${id}`);
@@ -61,7 +66,12 @@ export default function Bookings() {
     }));
   };
 
-  const handleReviewSubmit = async (bookingId) => {
+  // =========================
+  // FIX 2: PREVENT PAGE RELOAD
+  // =========================
+  const handleReviewSubmit = async (e, bookingId) => {
+    if (e) e.preventDefault(); // 🔥 prevents reload
+
     try {
       const review = reviewInputs[bookingId];
 
@@ -89,16 +99,9 @@ export default function Bookings() {
     }
   };
 
-  // ==============================
-  // IMAGE HANDLER (SAFE ADDITION)
-  // ==============================
   const getVehicleImage = (image) => {
     if (!image) return "https://via.placeholder.com/300";
-
-    // already cloudinary or external
     if (image.startsWith("http")) return image;
-
-    // fallback (legacy support only)
     return `https://vehicle-rental-backend-mu.vercel.app/api${image}`;
   };
 
@@ -118,15 +121,12 @@ export default function Bookings() {
             key={b._id}
             className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
           >
-            {/* IMAGE (ENHANCED SAFE VERSION) */}
+            {/* IMAGE */}
             {b.vehicleId?.image && (
               <img
                 src={getVehicleImage(b.vehicleId.image)}
                 alt={`${b.vehicleId?.make} ${b.vehicleId?.model}`}
                 className="h-48 w-full object-cover"
-                onError={(e) => {
-                  e.target.src = "https://via.placeholder.com/300";
-                }}
               />
             )}
 
@@ -148,20 +148,22 @@ export default function Bookings() {
                 Total: ${b.totalPrice ?? "N/A"}
               </p>
 
-              {/* ACTION BUTTONS */}
+              {/* ACTION BUTTONS (FIXED) */}
               <div className="flex gap-2 flex-wrap mt-2">
                 {user?.role === "user" && b.status === "booked" && (
                   <>
                     <button
+                      type="button"
+                      onClick={(e) => handleAction(e, b._id, "pay")}
                       className="px-4 py-2 bg-green-600 text-white rounded"
-                      onClick={() => handleAction(b._id, "pay")}
                     >
                       Pay
                     </button>
 
                     <button
+                      type="button"
+                      onClick={(e) => handleAction(e, b._id, "cancel")}
                       className="px-4 py-2 bg-red-600 text-white rounded"
-                      onClick={() => handleAction(b._id, "cancel")}
                     >
                       Cancel
                     </button>
@@ -170,15 +172,16 @@ export default function Bookings() {
 
                 {user?.role === "user" && b.status === "paid" && (
                   <button
+                    type="button"
+                    onClick={(e) => handleAction(e, b._id, "complete")}
                     className="px-4 py-2 bg-purple-600 text-white rounded"
-                    onClick={() => handleAction(b._id, "complete")}
                   >
                     Mark as Completed
                   </button>
                 )}
               </div>
 
-              {/* REVIEW SECTION (UNCHANGED) */}
+              {/* REVIEW SECTION */}
               {user?.role === "user" && b.status === "completed" && (
                 <div className="mt-3 flex flex-col gap-2">
                   {b.review?.rating ? (
@@ -197,7 +200,7 @@ export default function Bookings() {
                         min="1"
                         max="5"
                         placeholder="Rating (1-5)"
-                        className="border p-2 rounded focus:ring-2 focus:ring-yellow-400"
+                        className="border p-2 rounded"
                         value={reviewInputs[b._id]?.rating || ""}
                         onChange={(e) =>
                           handleReviewChange(
@@ -211,7 +214,7 @@ export default function Bookings() {
                       <input
                         type="text"
                         placeholder="Comment"
-                        className="border p-2 rounded focus:ring-2 focus:ring-yellow-400"
+                        className="border p-2 rounded"
                         value={reviewInputs[b._id]?.comment || ""}
                         onChange={(e) =>
                           handleReviewChange(
@@ -223,8 +226,9 @@ export default function Bookings() {
                       />
 
                       <button
+                        type="button"
                         className="px-4 py-2 bg-yellow-500 text-white rounded"
-                        onClick={() => handleReviewSubmit(b._id)}
+                        onClick={(e) => handleReviewSubmit(e, b._id)}
                       >
                         Submit Review
                       </button>
