@@ -4,6 +4,13 @@ import toast from "react-hot-toast";
 
 const FALLBACK_IMAGE = "https://via.placeholder.com/300";
 
+// =========================
+// FIX: AUTO DETECT BACKEND URL (DEV + PROD SAFE)
+// =========================
+const BACKEND_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://vehicle-rental-backend-mu.vercel.app/api";
+
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
   const [startDate, setStartDate] = useState("");
@@ -25,15 +32,15 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
   // =========================
-  // IMAGE FIX (Vercel + future Cloudinary safe)
+  // FIXED IMAGE HANDLER (IMPORTANT FOR VERCEL)
   // =========================
   const imageUrl =
     vehicle.image && typeof vehicle.image === "string"
       ? vehicle.image.startsWith("http")
         ? vehicle.image
-        : `https://vehicle-rental-backend-mu.vercel.app/api${
-            vehicle.image.startsWith("/") ? "" : "/"
-          }${vehicle.image}`
+        : `${BACKEND_BASE}${vehicle.image.startsWith("/") ? "" : "/"}${
+            vehicle.image
+          }`
       : FALLBACK_IMAGE;
 
   // =========================
@@ -61,7 +68,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   const isOwnVehicle = user?._id && vehicleOwnerId === user._id;
 
   // =========================
-  // BOOK VEHICLE
+  // BOOK VEHICLE (UNCHANGED LOGIC)
   // =========================
   const bookVehicle = async () => {
     if (loading || isBookingRef.current) return;
@@ -158,7 +165,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   };
 
   // =========================
-  // SAFE AVERAGE RATING
+  // SAFE RATING
   // =========================
   const validRatings = reviews
     .map((r) => Number(r.rating))

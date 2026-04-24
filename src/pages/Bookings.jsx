@@ -102,7 +102,7 @@ export default function Bookings() {
   const getVehicleImage = (image) => {
     if (!image) return "https://via.placeholder.com/300";
     if (image.startsWith("http")) return image;
-    return `https://vehicle-rental-backend-mu.vercel.app/api${image}`;
+    return `http://localhost:5000/api${image}`;
   };
 
   return (
