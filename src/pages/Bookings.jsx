@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 export default function Bookings() {
   const [bookings, setBookings] = useState([]);
@@ -37,22 +37,64 @@ export default function Bookings() {
         })
       : "N/A";
 
-  // =========================
-  // FIX 1: PREVENT PAGE RELOAD
-  // =========================
+
   const handleAction = async (e, id, action) => {
-    if (e) e.preventDefault(); // 🔥 prevents accidental reload/navigation
+    if (e) e.preventDefault();
 
     try {
-      if (action === "pay") await api.post(`/bookings/pay/${id}`);
-      if (action === "cancel") await api.delete(`/bookings/cancel/${id}`);
-      if (action === "complete") await api.post(`/bookings/complete/${id}`);
+      if (action === "pay") {
+        await api.post(`/bookings/pay/${id}`);
+        toast.success("Payment successful");
+      }
 
-      toast.success(`Booking ${action} successful`);
+      if (action === "cancel") {
+  toast((t) => (
+    <div className="flex flex-col gap-3">
+      <p>Do you want to cancel the ride?</p>
+
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={async () => {
+            toast.dismiss(t.id); 
+            try {
+              const res = await api.delete(`/bookings/cancel/${id}`);
+              toast.success(res.data?.message || "Booking cancelled successfully");
+              fetchBookings();
+            } catch (err) {
+              console.error(err);
+              toast.error("Cancel failed");
+            }
+          }}
+          className="bg-red-600 text-white px-3 py-1 rounded"
+        >
+          Yes
+        </button>
+
+        <button
+          onClick={() => toast.dismiss(t.id)} // ✅ close only
+          className="bg-gray-500 text-white px-3 py-1 rounded"
+        >
+          No
+        </button>
+      </div>
+    </div>
+  ));
+
+  return; 
+}
+
+      if (action === "complete") {
+        await api.post(`/bookings/complete/${id}`);
+        toast.success("Booking marked as completed");
+      }
+
       fetchBookings();
     } catch (err) {
       console.error(err);
-      toast.error(`Booking ${action} failed`);
+      toast.error(
+        err.response?.data?.message ||
+          `Booking ${action} failed`
+      );
     }
   };
 
@@ -66,11 +108,9 @@ export default function Bookings() {
     }));
   };
 
-  // =========================
-  // FIX 2: PREVENT PAGE RELOAD
-  // =========================
+
   const handleReviewSubmit = async (e, bookingId) => {
-    if (e) e.preventDefault(); // 🔥 prevents reload
+    if (e) e.preventDefault();
 
     try {
       const review = reviewInputs[bookingId];
@@ -95,14 +135,17 @@ export default function Bookings() {
       fetchBookings();
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Failed to submit review");
+      toast.error(
+        err.response?.data?.message ||
+          "Failed to submit review"
+      );
     }
   };
 
   const getVehicleImage = (image) => {
     if (!image) return "https://via.placeholder.com/300";
     if (image.startsWith("http")) return image;
-    return `http://localhost:5000/api${image}`;
+    return `https://vehicle-rental-backend-mu.vercel.app/api${image}`;
   };
 
   return (
@@ -121,7 +164,6 @@ export default function Bookings() {
             key={b._id}
             className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
           >
-            {/* IMAGE */}
             {b.vehicleId?.image && (
               <img
                 src={getVehicleImage(b.vehicleId.image)}
@@ -136,8 +178,11 @@ export default function Bookings() {
               </p>
 
               <p className="text-gray-700">
-                <span className="font-semibold">Booking Dates:</span>{" "}
-                {formatDate(b.startDate)} → {formatDate(b.endDate)}
+                <span className="font-semibold">
+                  Booking Dates:
+                </span>{" "}
+                {formatDate(b.startDate)} →{" "}
+                {formatDate(b.endDate)}
               </p>
 
               <p className="text-gray-500 text-sm">
@@ -148,98 +193,115 @@ export default function Bookings() {
                 Total: ${b.totalPrice ?? "N/A"}
               </p>
 
-              {/* ACTION BUTTONS (FIXED) */}
+              
               <div className="flex gap-2 flex-wrap mt-2">
-                {user?.role === "user" && b.status === "booked" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => handleAction(e, b._id, "pay")}
-                      className="px-4 py-2 bg-green-600 text-white rounded"
-                    >
-                      Pay
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => handleAction(e, b._id, "cancel")}
-                      className="px-4 py-2 bg-red-600 text-white rounded"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                )}
-
-                {user?.role === "user" && b.status === "paid" && (
-                  <button
-                    type="button"
-                    onClick={(e) => handleAction(e, b._id, "complete")}
-                    className="px-4 py-2 bg-purple-600 text-white rounded"
-                  >
-                    Mark as Completed
-                  </button>
-                )}
-              </div>
-
-              {/* REVIEW SECTION */}
-              {user?.role === "user" && b.status === "completed" && (
-                <div className="mt-3 flex flex-col gap-2">
-                  {b.review?.rating ? (
-                    <div className="bg-gray-100 p-2 rounded">
-                      <p className="text-yellow-600 font-semibold">
-                        ⭐ {b.review.rating}/5
-                      </p>
-                      <p className="text-gray-700">
-                        {b.review.comment}
-                      </p>
-                    </div>
-                  ) : (
+                {user?.role === "user" &&
+                  b.status === "booked" && (
                     <>
-                      <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        placeholder="Rating (1-5)"
-                        className="border p-2 rounded"
-                        value={reviewInputs[b._id]?.rating || ""}
-                        onChange={(e) =>
-                          handleReviewChange(
-                            b._id,
-                            "rating",
-                            e.target.value
-                          )
+                      <button
+                        type="button"
+                        onClick={(e) =>
+                          handleAction(e, b._id, "pay")
                         }
-                      />
-
-                      <input
-                        type="text"
-                        placeholder="Comment"
-                        className="border p-2 rounded"
-                        value={reviewInputs[b._id]?.comment || ""}
-                        onChange={(e) =>
-                          handleReviewChange(
-                            b._id,
-                            "comment",
-                            e.target.value
-                          )
-                        }
-                      />
+                        className="px-4 py-2 bg-green-600 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-green-700 shadow-sm"
+                      >
+                        Pay
+                      </button>
 
                       <button
                         type="button"
-                        className="px-4 py-2 bg-yellow-500 text-white rounded"
-                        onClick={(e) => handleReviewSubmit(e, b._id)}
+                        onClick={(e) =>
+                          handleAction(e, b._id, "cancel")
+                        }
+                        className="px-4 py-2 bg-red-600 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-red-700 shadow-sm"
                       >
-                        Submit Review
+                        Cancel
                       </button>
                     </>
                   )}
-                </div>
-              )}
+
+                {user?.role === "user" &&
+                  b.status === "paid" && (
+                    <button
+                      type="button"
+                      onClick={(e) =>
+                        handleAction(e, b._id, "complete")
+                      }
+                      className="px-4 py-2 bg-purple-600 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-purple-700 shadow-sm"
+                    >
+                      Mark as Completed
+                    </button>
+                  )}
+              </div>
+
+              
+              {user?.role === "user" &&
+                b.status === "completed" && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {b.review?.rating ? (
+                      <div className="bg-gray-100 p-2 rounded">
+                        <p className="text-yellow-600 font-semibold">
+                          ⭐ {b.review.rating}/5
+                        </p>
+                        <p className="text-gray-700">
+                          {b.review.comment}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="number"
+                          min="1"
+                          max="5"
+                          placeholder="Rating (1-5)"
+                          className="border p-2 rounded"
+                          value={
+                            reviewInputs[b._id]?.rating || ""
+                          }
+                          onChange={(e) =>
+                            handleReviewChange(
+                              b._id,
+                              "rating",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                        <input
+                          type="text"
+                          placeholder="Comment"
+                          className="border p-2 rounded"
+                          value={
+                            reviewInputs[b._id]?.comment || ""
+                          }
+                          onChange={(e) =>
+                            handleReviewChange(
+                              b._id,
+                              "comment",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-yellow-500 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-yellow-600 shadow-sm"
+                          onClick={(e) =>
+                            handleReviewSubmit(e, b._id)
+                          }
+                        >
+                          Submit Review
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
 
               <p className="text-sm mt-2">
                 Status:{" "}
-                <span className="font-semibold">{b.status}</span>
+                <span className="font-semibold">
+                  {b.status}
+                </span>
               </p>
             </div>
           </div>

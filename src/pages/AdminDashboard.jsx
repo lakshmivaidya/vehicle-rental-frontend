@@ -9,9 +9,7 @@ export default function AdminDashboard() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [vehicleHistory, setVehicleHistory] = useState([]);
 
-  // =======================
-  // FETCH ALL DATA
-  // =======================
+
   const fetchData = async () => {
     try {
       const [v, u, b] = await Promise.all([
@@ -32,9 +30,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // =======================
-  // VEHICLE HISTORY
-  // =======================
+
   const fetchVehicleHistory = async (vehicle) => {
     if (!vehicle?._id) return;
 
@@ -52,9 +48,7 @@ export default function AdminDashboard() {
     setVehicleHistory([]);
   };
 
-  // =======================
-  // STATUS UI
-  // =======================
+
   const getStatus = (status) => {
     if (status === "paid" || status === "completed") {
       return <span className="text-green-600 font-semibold">Completed</span>;
@@ -73,7 +67,7 @@ export default function AdminDashboard() {
 
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
 
-      {/* ================= VEHICLES ================= */}
+      
       <div className="bg-white p-6 rounded shadow mb-8">
         <h2 className="text-xl font-semibold mb-4 text-blue-600">
           Vehicles
@@ -120,7 +114,7 @@ export default function AdminDashboard() {
         </table>
       </div>
 
-      {/* ================= USERS ================= */}
+
       <div className="bg-white p-6 rounded shadow mb-8">
         <h2 className="text-xl font-semibold mb-4 text-green-600">
           Users
@@ -151,7 +145,7 @@ export default function AdminDashboard() {
         </table>
       </div>
 
-      {/* ================= BOOKINGS ================= */}
+      
       <div className="bg-white p-6 rounded shadow">
         <h2 className="text-xl font-semibold mb-4 text-purple-600">
           Bookings
@@ -208,7 +202,7 @@ export default function AdminDashboard() {
         </table>
       </div>
 
-      {/* ================= VEHICLE HISTORY MODAL ================= */}
+      
       {selectedVehicle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl p-6 rounded shadow-lg max-h-[80vh] overflow-auto">

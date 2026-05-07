@@ -4,9 +4,7 @@ import toast from "react-hot-toast";
 
 const FALLBACK_IMAGE = "https://via.placeholder.com/300";
 
-// =========================
-// FIX: AUTO DETECT BACKEND URL (DEV + PROD SAFE)
-// =========================
+
 const BACKEND_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   "https://vehicle-rental-backend-mu.vercel.app/api";
@@ -31,21 +29,15 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  // =========================
-  // FIXED IMAGE HANDLER (IMPORTANT FOR VERCEL)
-  // =========================
+
   const imageUrl =
     vehicle.image && typeof vehicle.image === "string"
       ? vehicle.image.startsWith("http")
         ? vehicle.image
-        : `${BACKEND_BASE}${vehicle.image.startsWith("/") ? "" : "/"}${
-            vehicle.image
-          }`
+        : `${BACKEND_BASE}${vehicle.image.startsWith("/") ? "" : "/"}${vehicle.image}`
       : FALLBACK_IMAGE;
 
-  // =========================
-  // FETCH REVIEWS
-  // =========================
+
   const fetchReviews = async () => {
     try {
       const res = await api.get(`/reviews/${vehicle._id}`);
@@ -67,9 +59,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const isOwnVehicle = user?._id && vehicleOwnerId === user._id;
 
-  // =========================
-  // BOOK VEHICLE (UNCHANGED LOGIC)
-  // =========================
+
   const bookVehicle = async () => {
     if (loading || isBookingRef.current) return;
 
@@ -103,8 +93,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
       setStartDate("");
       setEndDate("");
-
-      refreshVehicles?.();
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Booking failed");
@@ -116,9 +104,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     }
   };
 
-  // =========================
-  // UPDATE VEHICLE
-  // =========================
+
   const updateVehicle = async () => {
     try {
       await api.put(`/vehicles/${vehicle._id}`, editData);
@@ -131,28 +117,42 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     }
   };
 
-  // =========================
-  // UNLIST VEHICLE
-  // =========================
-  const unlistVehicle = async () => {
-    const ok = window.confirm(
-      "Are you sure you want to unlist this vehicle?"
-    );
-    if (!ok) return;
+ 
+  const confirmUnlistVehicle = () => {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p>Do you want to unlist this vehicle?</p>
 
-    try {
-      await api.patch(`/vehicles/${vehicle._id}/unlist`);
-      toast.success("Vehicle unlisted");
-      refreshVehicles?.();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to unlist");
-    }
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await api.patch(`/vehicles/${vehicle._id}/unlist`);
+                toast.success("Vehicle unlisted");
+                refreshVehicles?.();
+              } catch (err) {
+                console.error(err);
+                toast.error("Failed to unlist");
+              }
+            }}
+            className="bg-red-600 text-white px-3 py-1 rounded"
+          >
+            Yes
+          </button>
+
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-gray-500 text-white px-3 py-1 rounded"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
   };
 
-  // =========================
-  // RELIST VEHICLE
-  // =========================
+
   const relistVehicle = async () => {
     try {
       await api.patch(`/vehicles/${vehicle._id}/relist`);
@@ -164,9 +164,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     }
   };
 
-  // =========================
-  // SAFE RATING
-  // =========================
+
   const validRatings = reviews
     .map((r) => Number(r.rating))
     .filter((r) => !isNaN(r));
@@ -178,9 +176,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // =========================
-  // UNLISTED STATE
-  // =========================
+
   if (vehicle.available === false) {
     return (
       <div className="bg-gray-200 p-4 rounded-xl shadow transition hover:scale-[1.02]">
@@ -195,7 +191,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
         {isOwnVehicle && (
           <button
             onClick={relistVehicle}
-            className="mt-2 bg-green-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
+            className="mt-2 bg-green-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-green-700 shadow-sm"
           >
             Relist Vehicle
           </button>
@@ -207,7 +203,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 flex flex-col transition transform hover:scale-[1.02] hover:shadow-xl">
 
-      {/* IMAGE */}
       <img
         src={imageUrl}
         alt={`${vehicle.make} ${vehicle.model}`}
@@ -217,77 +212,18 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
         }}
       />
 
-      {/* EDIT MODE */}
       {isEditing ? (
         <div className="space-y-2">
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.make}
-            onChange={(e) =>
-              setEditData({ ...editData, make: e.target.value })
-            }
-            placeholder="Make"
-          />
-
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.model}
-            onChange={(e) =>
-              setEditData({ ...editData, model: e.target.value })
-            }
-            placeholder="Model"
-          />
-
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.year}
-            onChange={(e) =>
-              setEditData({ ...editData, year: e.target.value })
-            }
-            placeholder="Year"
-          />
-
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.type}
-            onChange={(e) =>
-              setEditData({ ...editData, type: e.target.value })
-            }
-            placeholder="Type"
-          />
-
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.location}
-            onChange={(e) =>
-              setEditData({ ...editData, location: e.target.value })
-            }
-            placeholder="Location"
-          />
-
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.pricePerDay}
-            onChange={(e) =>
-              setEditData({ ...editData, pricePerDay: e.target.value })
-            }
-            placeholder="Price"
-          />
+          <input className="border p-2 w-full rounded" value={editData.make} onChange={(e) => setEditData({ ...editData, make: e.target.value })} placeholder="Make" />
+          <input className="border p-2 w-full rounded" value={editData.model} onChange={(e) => setEditData({ ...editData, model: e.target.value })} placeholder="Model" />
+          <input className="border p-2 w-full rounded" value={editData.year} onChange={(e) => setEditData({ ...editData, year: e.target.value })} placeholder="Year" />
+          <input className="border p-2 w-full rounded" value={editData.type} onChange={(e) => setEditData({ ...editData, type: e.target.value })} placeholder="Type" />
+          <input className="border p-2 w-full rounded" value={editData.location} onChange={(e) => setEditData({ ...editData, location: e.target.value })} placeholder="Location" />
+          <input className="border p-2 w-full rounded" value={editData.pricePerDay} onChange={(e) => setEditData({ ...editData, pricePerDay: e.target.value })} placeholder="Price" />
 
           <div className="flex gap-2">
-            <button
-              onClick={updateVehicle}
-              className="bg-green-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
-            >
-              Save
-            </button>
-
-            <button
-              onClick={() => setIsEditing(false)}
-              className="bg-gray-500 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
-            >
-              Cancel
-            </button>
+            <button onClick={updateVehicle} className="bg-green-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-green-700 shadow-sm">Save</button>
+            <button onClick={() => setIsEditing(false)} className="bg-gray-500 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-gray-600 shadow-sm">Cancel</button>
           </div>
         </div>
       ) : (
@@ -305,55 +241,44 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
           {isOwnVehicle && (
             <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-blue-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={unlistVehicle}
-                className="bg-red-600 text-white px-3 py-1 rounded transition transform active:scale-95 hover:scale-105"
-              >
-                Unlist
-              </button>
+              <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-blue-700 shadow-sm">Edit</button>
+              <button onClick={confirmUnlistVehicle} className="bg-red-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-red-700 shadow-sm">Unlist</button>
             </div>
           )}
 
-          <div className="mt-4 flex flex-col gap-2">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              min={today}
-              className="border p-2 rounded"
-            />
+          {!isOwnVehicle && (
+  <div className="mt-4 flex flex-col gap-2">
+    <input
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      min={today}
+      className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
+    />
 
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              min={startDate || today}
-              className="border p-2 rounded"
-            />
-          </div>
+    <input
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      min={startDate || today}
+      className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
+    />
+  </div>
+)}
 
-          <button
-            onClick={bookVehicle}
-            disabled={loading || isOwnVehicle}
-            className={`p-2 mt-3 rounded text-white transition transform active:scale-95 hover:scale-105 ${
-              loading || isOwnVehicle
-                ? "bg-gray-400"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {isOwnVehicle
-              ? "Cannot book your vehicle"
-              : loading
-              ? "Booking..."
-              : "Book Now"}
-          </button>
+ {isOwnVehicle ? (
+  <p className="text-red-600 font-semibold mt-3">
+    You cannot book your own vehicle
+  </p>
+) : (
+  <button
+    onClick={bookVehicle}
+    disabled={loading}
+    className="p-2 mt-3 rounded text-white bg-blue-600 transition transform hover:scale-105 active:scale-95 hover:bg-blue-700 shadow-md"
+  >
+    {loading ? "Booking..." : "Book Now"}
+  </button>
+)}
         </>
       )}
     </div>

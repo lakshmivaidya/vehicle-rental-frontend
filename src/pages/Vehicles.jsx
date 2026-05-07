@@ -13,56 +13,49 @@ export default function Vehicles({ user }) {
     maxPrice: "",
   });
 
-  // =========================
-  // FETCH VEHICLES (FIXED)
-  // =========================
   const fetchVehicles = useCallback(async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const params = {};
+    const params = {};
 
-      if (filters.category?.trim()) {
-        params.category = filters.category.trim();
-      }
-
-      if (filters.location?.trim()) {
-        params.location = filters.location.trim();
-      }
-
-      if (filters.minPrice !== "") {
-        params.minPrice = filters.minPrice;
-      }
-
-      if (filters.maxPrice !== "") {
-        params.maxPrice = filters.maxPrice;
-      }
-
-      // ✅ IMPORTANT FIX: avoid calling /vehicles?
-      const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `/vehicles?${queryString}` : "/vehicles";
-
-      const res = await api.get(url);
-
-      setVehicles(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error("Fetch vehicles error:", err);
-      setVehicles([]);
-    } finally {
-      setLoading(false);
+    if (filters.category?.trim()) {
+      params.category = filters.category.trim();
     }
-  }, [filters]);
 
-  // =========================
-  // INITIAL LOAD
-  // =========================
+    if (filters.location?.trim()) {
+      params.location = filters.location.trim();
+    }
+
+    if (filters.minPrice !== "") {
+      params.minPrice = filters.minPrice;
+    }
+
+    if (filters.maxPrice !== "") {
+      params.maxPrice = filters.maxPrice;
+    }
+
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `/vehicles?${queryString}` : "/vehicles";
+
+    const res = await api.get(url);
+
+    const data = Array.isArray(res.data) ? res.data : [];
+
+    setVehicles(data);
+
+  } catch (err) {
+    console.error("Fetch vehicles error:", err);
+    setVehicles([]);
+  } finally {
+    setLoading(false);
+  }
+}, [filters]);
+
   useEffect(() => {
     fetchVehicles();
   }, [fetchVehicles]);
 
-  // =========================
-  // FILTER CHANGE
-  // =========================
   const handleChange = (e) => {
     setFilters((prev) => ({
       ...prev,
@@ -70,9 +63,6 @@ export default function Vehicles({ user }) {
     }));
   };
 
-  // =========================
-  // CLEAR FILTERS
-  // =========================
   const clearFilters = () => {
     setFilters({
       category: "",
@@ -81,9 +71,7 @@ export default function Vehicles({ user }) {
       maxPrice: "",
     });
 
-    setTimeout(() => {
-      fetchVehicles();
-    }, 0);
+    //fetchVehicles();
   };
 
   return (
@@ -93,7 +81,7 @@ export default function Vehicles({ user }) {
         Available Vehicles
       </h1>
 
-      {/* FILTER PANEL */}
+      
       <div className="backdrop-blur-md bg-white/70 border border-white/40 shadow-xl rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
 
         <input
@@ -130,7 +118,6 @@ export default function Vehicles({ user }) {
           value={filters.maxPrice}
         />
 
-        {/* BUTTONS */}
         <div className="md:col-span-4 flex flex-col sm:flex-row gap-3 justify-center mt-2">
 
           <button
@@ -154,7 +141,6 @@ export default function Vehicles({ user }) {
         </div>
       </div>
 
-      {/* VEHICLE GRID */}
       {loading ? (
         <p className="text-center text-gray-600 text-lg mt-6">
           Loading vehicles...

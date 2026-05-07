@@ -25,7 +25,7 @@ export default function ListVehicle() {
   };
 
   const handleSubmit = async () => {
-    // Validation
+    
     if (
       !form.make ||
       !form.model ||
@@ -39,7 +39,6 @@ export default function ListVehicle() {
     }
 
     try {
-      // ✅ Get logged in user
       const user = JSON.parse(localStorage.getItem("user"));
 
       if (!user || !user._id) {
@@ -47,7 +46,6 @@ export default function ListVehicle() {
         return;
       }
 
-      // ✅ Use FormData for file upload
       const formData = new FormData();
 
       formData.append("make", form.make);
@@ -57,10 +55,8 @@ export default function ListVehicle() {
       formData.append("location", form.location);
       formData.append("pricePerDay", Number(form.pricePerDay));
 
-      // 🔥 CRITICAL (DO NOT REMOVE)
       formData.append("userId", user._id);
 
-      // ✅ Image file
       if (imageFile) {
         formData.append("image", imageFile);
       }
@@ -136,7 +132,6 @@ export default function ListVehicle() {
         className="border p-2 w-full mb-2 rounded"
       />
 
-      {/* ✅ FILE UPLOAD INSTEAD OF URL */}
       <input
         type="file"
         accept="image/*"
