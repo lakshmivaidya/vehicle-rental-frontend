@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "https://vehicle-rental-backend-mu.vercel.app/api",
+  baseURL: "https://vehicle-rental-backend-2egp.onrender.com/api",
 });
 
 api.interceptors.request.use((config) => {
@@ -22,3 +22,4 @@ api.interceptors.request.use((config) => {
   
   //"https://vehicle-rental-backend-mu.vercel.app/api",
   //http://localhost:5000/api
+  // https://vehicle-rental-backend-2egp.onrender.com/
