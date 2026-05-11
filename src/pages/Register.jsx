@@ -25,8 +25,12 @@ export default function Register() {
 
   
   const isValidEmail = (email) => {
-    return /@(gmail\.com|yahoo\.com|outlook\.com)$/.test(email);
-  };
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!regex.test(email)) return false;
+
+  return email.toLowerCase().endsWith(".com");
+};
 
   const submit = async () => {
     setError("");
@@ -37,7 +41,7 @@ export default function Register() {
     }
 
     if (!isValidEmail(form.email)) {
-      setError("Only Gmail, Yahoo, Outlook emails are allowed");
+      setError("Please enter a valid .com email address");
       return;
     }
 

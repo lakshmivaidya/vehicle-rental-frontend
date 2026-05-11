@@ -7,7 +7,7 @@ const FALLBACK_IMAGE = "https://via.placeholder.com/300";
 
 const BACKEND_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://vehicle-rental-backend-2egp.onrender.com/api";
+  "http://localhost:5000/api";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
