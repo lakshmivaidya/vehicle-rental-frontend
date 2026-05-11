@@ -35,12 +35,18 @@ export default function Register() {
   const submit = async () => {
     setError("");
 
-    if (!form.name || !form.email || !form.password) {
+    // ✅ SAFE ADDITION: trim values
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const password = form.password;
+
+    // ✅ SAFE FIX: empty validation improved
+    if (!name || !email || !password) {
       setError("All fields are required");
       return;
     }
 
-    if (!isValidEmail(form.email)) {
+    if (!isValidEmail(email)) {
       setError("Please enter a valid .com email address");
       return;
     }
@@ -48,14 +54,26 @@ export default function Register() {
     try {
       setLoading(true);
 
-      await api.post("/auth/register", form);
+      await api.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
 
       alert("Account created successfully");
 
       navigate("/login");
 
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+
+      // ✅ SAFE ADDITION: better debugging support
+      console.log("REGISTER ERROR:", err.response || err);
+
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Registration failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -278,11 +296,7 @@ export default function Register() {
         </div>
       </div>
 
-
-      <section
-        id="about"
-        className="px-10 md:px-20 py-20 bg-[#111827]"
-      >
+      <section id="about" className="px-10 md:px-20 py-20 bg-[#111827]">
         <h2 className="text-4xl font-bold mb-6">
           About
         </h2>
@@ -295,10 +309,7 @@ export default function Register() {
         </p>
       </section>
 
-      <section
-        id="data"
-        className="px-10 md:px-20 py-20"
-      >
+      <section id="data" className="px-10 md:px-20 py-20">
         <h2 className="text-4xl font-bold mb-6">
           Open Data
         </h2>
@@ -310,10 +321,7 @@ export default function Register() {
         </p>
       </section>
 
-      <section
-        id="plans"
-        className="px-10 md:px-20 py-20 bg-[#111827]"
-      >
+      <section id="plans" className="px-10 md:px-20 py-20 bg-[#111827]">
         <h2 className="text-4xl font-bold mb-6">
           Plans
         </h2>
@@ -325,10 +333,7 @@ export default function Register() {
         </p>
       </section>
 
-      <section
-        id="community"
-        className="px-10 md:px-20 py-20"
-      >
+      <section id="community" className="px-10 md:px-20 py-20">
         <h2 className="text-4xl font-bold mb-6">
           Community
         </h2>
