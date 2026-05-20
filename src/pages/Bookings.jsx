@@ -16,7 +16,11 @@ export default function Bookings() {
         return b.userId === user._id;
       });
 
-      setBookings(userBookings);
+      setBookings(
+        [...userBookings].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        )
+      );
     } catch (err) {
       console.error("Error fetching bookings:", err);
       toast.error("Failed to fetch bookings");
@@ -37,51 +41,109 @@ export default function Bookings() {
         })
       : "N/A";
 
+  // Show Mark as Completed only for today or past bookings
+  const canMarkCompleted = (endDate) => {
+    if (!endDate) return false;
+
+    const bookingEnd = new Date(endDate);
+    const today = new Date();
+
+    bookingEnd.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return bookingEnd <= today;
+  };
 
   const handleAction = async (e, id, action) => {
     if (e) e.preventDefault();
 
     try {
       if (action === "pay") {
-        await api.post(`/bookings/pay/${id}`);
+  const orderRes = await api.post(`/bookings/create-order/${id}`);
+
+  const order = orderRes.data;
+
+  const options = {
+    key: "rzp_test_SrZ2i54ACgonoc",
+    amount: order.amount,
+    currency: order.currency,
+    name: "Vehicle Rental System",
+    description: "Vehicle Booking Payment",
+    order_id: order.id,
+
+    handler: async function (response) {
+      try {
+        await api.post(`/bookings/verify-payment/${id}`, {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+        });
+
         toast.success("Payment successful");
+        fetchBookings();
+
+      } catch (err) {
+        console.error(err);
+        toast.error("Payment verification failed");
       }
+    },
+
+    prefill: {
+      name: user?.name || "",
+      email: user?.email || "",
+    },
+
+    theme: {
+      color: "#2563eb",
+    },
+  };
+
+  const razor = new window.Razorpay(options);
+
+  razor.on("payment.failed", function () {
+    toast.error("Payment failed");
+  });
+
+  razor.open();
+}
 
       if (action === "cancel") {
-  toast((t) => (
-    <div className="flex flex-col gap-3">
-      <p>Do you want to cancel the ride?</p>
+        toast((t) => (
+          <div className="flex flex-col gap-3">
+            <p>Do you want to cancel the ride?</p>
 
-      <div className="flex gap-2 justify-end">
-        <button
-          onClick={async () => {
-            toast.dismiss(t.id); 
-            try {
-              const res = await api.delete(`/bookings/cancel/${id}`);
-              toast.success(res.data?.message || "Booking cancelled successfully");
-              fetchBookings();
-            } catch (err) {
-              console.error(err);
-              toast.error("Cancel failed");
-            }
-          }}
-          className="bg-red-600 text-white px-3 py-1 rounded"
-        >
-          Yes
-        </button>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={async () => {
+                  toast.dismiss(t.id);
+                  try {
+                    const res = await api.delete(`/bookings/cancel/${id}`);
+                    toast.success(
+                      res.data?.message || "Booking cancelled successfully"
+                    );
+                    fetchBookings();
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Cancel failed");
+                  }
+                }}
+                className="bg-red-600 text-white px-3 py-1 rounded"
+              >
+                Yes
+              </button>
 
-        <button
-          onClick={() => toast.dismiss(t.id)} // ✅ close only
-          className="bg-gray-500 text-white px-3 py-1 rounded"
-        >
-          No
-        </button>
-      </div>
-    </div>
-  ));
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="bg-gray-500 text-white px-3 py-1 rounded"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        ));
 
-  return; 
-}
+        return;
+      }
 
       if (action === "complete") {
         await api.post(`/bookings/complete/${id}`);
@@ -92,8 +154,7 @@ export default function Bookings() {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.message ||
-          `Booking ${action} failed`
+        err.response?.data?.message || `Booking ${action} failed`
       );
     }
   };
@@ -107,7 +168,6 @@ export default function Bookings() {
       },
     }));
   };
-
 
   const handleReviewSubmit = async (e, bookingId) => {
     if (e) e.preventDefault();
@@ -136,8 +196,7 @@ export default function Bookings() {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.message ||
-          "Failed to submit review"
+        err.response?.data?.message || "Failed to submit review"
       );
     }
   };
@@ -145,7 +204,7 @@ export default function Bookings() {
   const getVehicleImage = (image) => {
     if (!image) return "https://via.placeholder.com/300";
     if (image.startsWith("http")) return image;
-    return `https://vehicle-rental-backend-beta.vercel.app/api${image}`;
+    return `http://localhost:5000/api${image}`;
   };
 
   return (
@@ -193,7 +252,6 @@ export default function Bookings() {
                 Total: ${b.totalPrice ?? "N/A"}
               </p>
 
-              
               <div className="flex gap-2 flex-wrap mt-2">
                 {user?.role === "user" &&
                   b.status === "booked" && (
@@ -222,19 +280,32 @@ export default function Bookings() {
 
                 {user?.role === "user" &&
                   b.status === "paid" && (
-                    <button
-                      type="button"
-                      onClick={(e) =>
-                        handleAction(e, b._id, "complete")
-                      }
-                      className="px-4 py-2 bg-purple-600 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-purple-700 shadow-sm"
-                    >
-                      Mark as Completed
-                    </button>
+                    <>
+                      {canMarkCompleted(b.endDate) ? (
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleAction(e, b._id, "complete")
+                          }
+                          className="px-4 py-2 bg-purple-600 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-purple-700 shadow-sm"
+                        >
+                          Mark as Completed
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleAction(e, b._id, "cancel")
+                          }
+                          className="px-4 py-2 bg-red-600 text-white rounded transition transform hover:scale-105 active:scale-95 hover:bg-red-700 shadow-sm"
+                        >
+                          Cancel Future Ride
+                        </button>
+                      )}
+                    </>
                   )}
               </div>
 
-              
               {user?.role === "user" &&
                 b.status === "completed" && (
                   <div className="mt-3 flex flex-col gap-2">

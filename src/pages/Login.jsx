@@ -14,7 +14,6 @@ export default function Login({ setUser }) {
 
       const loggedUser = res.data.user;
 
-      // ROLE CHECK (UNCHANGED)
       if (loggedUser.role !== role) {
         if (role === "user" && loggedUser.role === "admin") {
           alert("Admin credentials cannot be used for User login");

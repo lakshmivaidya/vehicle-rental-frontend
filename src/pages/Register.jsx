@@ -35,12 +35,10 @@ export default function Register() {
   const submit = async () => {
     setError("");
 
-    // ✅ SAFE ADDITION: trim values
     const name = form.name.trim();
     const email = form.email.trim();
     const password = form.password;
 
-    // ✅ SAFE FIX: empty validation improved
     if (!name || !email || !password) {
       setError("All fields are required");
       return;
@@ -66,7 +64,6 @@ export default function Register() {
 
     } catch (err) {
 
-      // ✅ SAFE ADDITION: better debugging support
       console.log("REGISTER ERROR:", err.response || err);
 
       setError(

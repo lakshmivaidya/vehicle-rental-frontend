@@ -169,8 +169,14 @@ export default function AdminDashboard() {
               <tr key={b._id} className="border-b">
                 <td className="p-2">{b.userId?.name}</td>
                 <td className="p-2">
-                  {b.vehicleId?.make} {b.vehicleId?.model}
-                </td>
+  {b.vehicleId ? (
+    `${b.vehicleId?.make} ${b.vehicleId?.model}`
+  ) : (
+    <span className="text-red-500 font-semibold">
+      Vehicle Deleted
+    </span>
+  )}
+</td>
                 <td className="p-2">
                   {new Date(b.startDate).toLocaleDateString()}
                 </td>

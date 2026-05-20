@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { api } from "../api";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const FALLBACK_IMAGE = "https://via.placeholder.com/300";
 
-
 const BACKEND_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://vehicle-rental-backend-beta.vercel.app/api";
+  "http://localhost:5000/api";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
@@ -17,6 +17,8 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [isEditing, setIsEditing] = useState(false);
 
   const isBookingRef = useRef(false);
+
+  const navigate = useNavigate();
 
   const [editData, setEditData] = useState({
     make: vehicle.make || "",
@@ -29,14 +31,12 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-
   const imageUrl =
     vehicle.image && typeof vehicle.image === "string"
       ? vehicle.image.startsWith("http")
         ? vehicle.image
         : `${BACKEND_BASE}${vehicle.image.startsWith("/") ? "" : "/"}${vehicle.image}`
       : FALLBACK_IMAGE;
-
 
   const fetchReviews = async () => {
     try {
@@ -59,6 +59,22 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const isOwnVehicle = user?._id && vehicleOwnerId === user._id;
 
+  const checkBookingConflict = async () => {
+    try {
+      const res = await api.get(`/bookings/check`, {
+        params: {
+          vehicleId: vehicle._id,
+          startDate,
+          endDate,
+        },
+      });
+
+      return res.data;
+    } catch (err) {
+      console.error(err);
+      return { conflict: false };
+    }
+  };
 
   const bookVehicle = async () => {
     if (loading || isBookingRef.current) return;
@@ -82,6 +98,19 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
       isBookingRef.current = true;
       setLoading(true);
 
+      const check = await checkBookingConflict();
+
+      if (check?.conflict) {
+        if (check?.status === "paid") {
+          toast.error(
+            "Ride is in progress. Please complete it to book the next one."
+          );
+        } else {
+          toast.error("Vehicle not available for the selected date(s)");
+        }
+        return;
+      }
+
       const res = await api.post("/bookings", {
         userId: user._id,
         vehicleId: vehicle._id,
@@ -93,17 +122,23 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
       setStartDate("");
       setEndDate("");
+
+      // AUTO REDIRECT TO BOOKINGS PAGE
+      setTimeout(() => {
+        navigate("/bookings");
+      }, 800);
+
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setLoading(false);
+
       setTimeout(() => {
         isBookingRef.current = false;
       }, 300);
     }
   };
-
 
   const updateVehicle = async () => {
     try {
@@ -117,7 +152,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     }
   };
 
- 
   const confirmUnlistVehicle = () => {
     toast((t) => (
       <div className="flex flex-col gap-3">
@@ -152,7 +186,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     ));
   };
 
-
   const relistVehicle = async () => {
     try {
       await api.patch(`/vehicles/${vehicle._id}/relist`);
@@ -164,7 +197,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     }
   };
 
-
   const validRatings = reviews
     .map((r) => Number(r.rating))
     .filter((r) => !isNaN(r));
@@ -175,7 +207,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
       : 0;
 
   const today = new Date().toISOString().split("T")[0];
-
 
   if (vehicle.available === false) {
     return (
@@ -247,38 +278,38 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
           )}
 
           {!isOwnVehicle && (
-  <div className="mt-4 flex flex-col gap-2">
-    <input
-      type="date"
-      value={startDate}
-      onChange={(e) => setStartDate(e.target.value)}
-      min={today}
-      className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
-    />
+            <div className="mt-4 flex flex-col gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                min={today}
+                className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
+              />
 
-    <input
-      type="date"
-      value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
-      min={startDate || today}
-      className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
-    />
-  </div>
-)}
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate || today}
+                className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          )}
 
- {isOwnVehicle ? (
-  <p className="text-red-600 font-semibold mt-3">
-    You cannot book your own vehicle
-  </p>
-) : (
-  <button
-    onClick={bookVehicle}
-    disabled={loading}
-    className="p-2 mt-3 rounded text-white bg-blue-600 transition transform hover:scale-105 active:scale-95 hover:bg-blue-700 shadow-md"
-  >
-    {loading ? "Booking..." : "Book Now"}
-  </button>
-)}
+          {isOwnVehicle ? (
+            <p className="text-red-600 font-semibold mt-3">
+              You cannot book your own vehicle
+            </p>
+          ) : (
+            <button
+              onClick={bookVehicle}
+              disabled={loading}
+              className="p-2 mt-3 rounded text-white bg-blue-600 transition transform hover:scale-105 active:scale-95 hover:bg-blue-700 shadow-md"
+            >
+              {loading ? "Booking..." : "Book Now"}
+            </button>
+          )}
         </>
       )}
     </div>

@@ -2,19 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =========================
-   🧠 GLOBAL APP BASE (PRODUCTION UI)
-========================= */
 
 body {
   background: #f8fafc;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
   overflow-x: hidden;
 }
-
-/* =========================
-   🌈 SOFT ATMOSPHERE BLOBS
-========================= */
 
 .blob {
   position: absolute;
@@ -46,9 +39,6 @@ body {
   100% { transform: translate(0px, 0px); }
 }
 
-/* =========================
-   🌆 CITY PARALLAX (NAMMA YATRI STYLE BACKGROUND)
-========================= */
 
 @keyframes cityFar {
   0% { transform: translateX(0); }
@@ -68,9 +58,6 @@ body {
   animation: cityMid 40s linear infinite;
 }
 
-/* =========================
-   🛣 ROAD MOTION
-========================= */
 
 @keyframes road {
   0% { transform: translateX(0); }
@@ -81,12 +68,7 @@ body {
   animation: road 6s linear infinite;
 }
 
-/* =========================
-   🚗 PRODUCTION TRAFFIC SYSTEM
-   (USED BY AnimatedBackground.jsx)
-========================= */
 
-/* Fast car */
 @keyframes carRightToLeft {
   0% { transform: translateX(110vw); }
   100% { transform: translateX(-200px); }
@@ -96,7 +78,6 @@ body {
   animation: carRightToLeft 8s linear infinite;
 }
 
-/* Slow car */
 @keyframes carRightToLeftSlow {
   0% { transform: translateX(120vw); }
   100% { transform: translateX(-250px); }
@@ -106,7 +87,6 @@ body {
   animation: carRightToLeftSlow 11s linear infinite;
 }
 
-/* Walkers */
 @keyframes walkRightToLeft {
   0% { transform: translateX(120vw); }
   100% { transform: translateX(-150px); }
@@ -116,7 +96,6 @@ body {
   animation: walkRightToLeft 13s linear infinite;
 }
 
-/* Bike (key Namma Yatri element) */
 @keyframes bike {
   0% { transform: translateX(110vw); }
   100% { transform: translateX(-200px); }
@@ -125,10 +104,6 @@ body {
 .animate-bike {
   animation: bike 10s linear infinite;
 }
-
-/* =========================
-   🧩 PRODUCTION UI SYSTEM
-========================= */
 
 .card {
   background: rgba(255,255,255,0.75);
