@@ -7,7 +7,7 @@ const FALLBACK_IMAGE = "https://via.placeholder.com/300";
 
 const BACKEND_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://vehicle-rental-backend-beta.vercel.app/api";
+  "http://localhost:5000/api";
 
 export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [reviews, setReviews] = useState([]);
@@ -35,7 +35,9 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     vehicle.image && typeof vehicle.image === "string"
       ? vehicle.image.startsWith("http")
         ? vehicle.image
-        : `${BACKEND_BASE}${vehicle.image.startsWith("/") ? "" : "/"}${vehicle.image}`
+        : `${BACKEND_BASE}${
+            vehicle.image.startsWith("/") ? "" : "/"
+          }${vehicle.image}`
       : FALLBACK_IMAGE;
 
   const fetchReviews = async () => {
@@ -59,23 +61,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const isOwnVehicle = user?._id && vehicleOwnerId === user._id;
 
-  const checkBookingConflict = async () => {
-    try {
-      const res = await api.get(`/bookings/check`, {
-        params: {
-          vehicleId: vehicle._id,
-          startDate,
-          endDate,
-        },
-      });
-
-      return res.data;
-    } catch (err) {
-      console.error(err);
-      return { conflict: false };
-    }
-  };
-
   const bookVehicle = async () => {
     if (loading || isBookingRef.current) return;
 
@@ -90,26 +75,21 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
     }
 
     if (!startDate || !endDate) {
-      toast.error("Please select both dates");
+      toast.error("Please select start and end date");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
+      toast.error("End date must be after start date");
       return;
     }
 
     try {
       isBookingRef.current = true;
       setLoading(true);
-
-      const check = await checkBookingConflict();
-
-      if (check?.conflict) {
-        if (check?.status === "paid") {
-          toast.error(
-            "Ride is in progress. Please complete it to book the next one."
-          );
-        } else {
-          toast.error("Vehicle not available for the selected date(s)");
-        }
-        return;
-      }
 
       const res = await api.post("/bookings", {
         userId: user._id,
@@ -123,7 +103,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
       setStartDate("");
       setEndDate("");
 
-      // AUTO REDIRECT TO BOOKINGS PAGE
       setTimeout(() => {
         navigate("/bookings");
       }, 800);
@@ -161,6 +140,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
           <button
             onClick={async () => {
               toast.dismiss(t.id);
+
               try {
                 await api.patch(`/vehicles/${vehicle._id}/unlist`);
                 toast.success("Vehicle unlisted");
@@ -203,7 +183,8 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   const avgRating =
     validRatings.length > 0
-      ? validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length
+      ? validRatings.reduce((sum, r) => sum + r, 0) /
+        validRatings.length
       : 0;
 
   const today = new Date().toISOString().split("T")[0];
@@ -233,7 +214,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 flex flex-col transition transform hover:scale-[1.02] hover:shadow-xl">
-
       <img
         src={imageUrl}
         alt={`${vehicle.make} ${vehicle.model}`}
@@ -245,55 +225,158 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
 
       {isEditing ? (
         <div className="space-y-2">
-          <input className="border p-2 w-full rounded" value={editData.make} onChange={(e) => setEditData({ ...editData, make: e.target.value })} placeholder="Make" />
-          <input className="border p-2 w-full rounded" value={editData.model} onChange={(e) => setEditData({ ...editData, model: e.target.value })} placeholder="Model" />
-          <input className="border p-2 w-full rounded" value={editData.year} onChange={(e) => setEditData({ ...editData, year: e.target.value })} placeholder="Year" />
-          <input className="border p-2 w-full rounded" value={editData.type} onChange={(e) => setEditData({ ...editData, type: e.target.value })} placeholder="Type" />
-          <input className="border p-2 w-full rounded" value={editData.location} onChange={(e) => setEditData({ ...editData, location: e.target.value })} placeholder="Location" />
-          <input className="border p-2 w-full rounded" value={editData.pricePerDay} onChange={(e) => setEditData({ ...editData, pricePerDay: e.target.value })} placeholder="Price" />
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.make}
+            onChange={(e) =>
+              setEditData({ ...editData, make: e.target.value })
+            }
+            placeholder="Make"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.model}
+            onChange={(e) =>
+              setEditData({ ...editData, model: e.target.value })
+            }
+            placeholder="Model"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.year}
+            onChange={(e) =>
+              setEditData({ ...editData, year: e.target.value })
+            }
+            placeholder="Year"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.type}
+            onChange={(e) =>
+              setEditData({ ...editData, type: e.target.value })
+            }
+            placeholder="Type"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.location}
+            onChange={(e) =>
+              setEditData({ ...editData, location: e.target.value })
+            }
+            placeholder="Location"
+          />
+
+          <input
+            className="border p-2 w-full rounded"
+            value={editData.pricePerDay}
+            onChange={(e) =>
+              setEditData({
+                ...editData,
+                pricePerDay: e.target.value,
+              })
+            }
+            placeholder="Price"
+          />
 
           <div className="flex gap-2">
-            <button onClick={updateVehicle} className="bg-green-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-green-700 shadow-sm">Save</button>
-            <button onClick={() => setIsEditing(false)} className="bg-gray-500 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-gray-600 shadow-sm">Cancel</button>
+            <button
+              onClick={updateVehicle}
+              className="bg-green-600 text-white px-3 py-1 rounded"
+            >
+              Save
+            </button>
+
+            <button
+              onClick={() => setIsEditing(false)}
+              className="bg-gray-500 text-white px-3 py-1 rounded"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       ) : (
         <>
-          <p><b>Make:</b> {vehicle.make}</p>
-          <p><b>Model:</b> {vehicle.model}</p>
-          <p><b>Year:</b> {vehicle.year}</p>
-          <p><b>Type:</b> {vehicle.type}</p>
-          <p><b>Location:</b> {vehicle.location}</p>
-          <p><b>Price:</b> ${vehicle.pricePerDay}</p>
+          <p>
+            <b>Make:</b> {vehicle.make}
+          </p>
+
+          <p>
+            <b>Model:</b> {vehicle.model}
+          </p>
+
+          <p>
+            <b>Year:</b> {vehicle.year}
+          </p>
+
+          <p>
+            <b>Type:</b> {vehicle.type}
+          </p>
+
+          <p>
+            <b>Location:</b> {vehicle.location}
+          </p>
+
+          <p>
+            <b>Price:</b> ${vehicle.pricePerDay}
+          </p>
 
           <p className="text-yellow-500 font-semibold mt-1">
-            {reviews.length ? `★ ${avgRating.toFixed(1)}` : "No ratings"}
+            {reviews.length
+              ? `★ ${avgRating.toFixed(1)}`
+              : "No ratings"}
           </p>
 
           {isOwnVehicle && (
             <div className="flex gap-2 mt-3">
-              <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-blue-700 shadow-sm">Edit</button>
-              <button onClick={confirmUnlistVehicle} className="bg-red-600 text-white px-3 py-1 rounded transition transform hover:scale-105 active:scale-95 hover:bg-red-700 shadow-sm">Unlist</button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={confirmUnlistVehicle}
+                className="bg-red-600 text-white px-3 py-1 rounded"
+              >
+                Unlist
+              </button>
             </div>
           )}
 
           {!isOwnVehicle && (
-            <div className="mt-4 flex flex-col gap-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                min={today}
-                className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
-              />
+            <div className="mt-4 flex flex-col gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
 
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={startDate || today}
-                className="border p-2 rounded transition focus:ring-2 focus:ring-blue-400"
-              />
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  min={today}
+                  className="border p-2 rounded w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Date
+                </label>
+
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate || today}
+                  className="border p-2 rounded w-full"
+                />
+              </div>
             </div>
           )}
 
@@ -305,7 +388,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
             <button
               onClick={bookVehicle}
               disabled={loading}
-              className="p-2 mt-3 rounded text-white bg-blue-600 transition transform hover:scale-105 active:scale-95 hover:bg-blue-700 shadow-md"
+              className="p-2 mt-3 rounded text-white bg-blue-600"
             >
               {loading ? "Booking..." : "Book Now"}
             </button>
