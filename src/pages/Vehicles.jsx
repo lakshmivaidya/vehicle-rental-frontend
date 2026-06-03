@@ -84,13 +84,21 @@ export default function Vehicles({ user }) {
       
       <div className="backdrop-blur-md bg-white/70 border border-white/40 shadow-xl rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
 
-        <input
-          name="category"
-          placeholder="Category (Car, Bike, SUV...)"
-          className="border p-3 rounded-xl focus:ring-2 focus:ring-blue-400"
-          onChange={handleChange}
-          value={filters.category}
-        />
+        <select
+  name="category"
+  className="border p-3 rounded-xl focus:ring-2 focus:ring-blue-400 text-gray-500"
+  onChange={handleChange}
+  value={filters.category}
+>
+  <option value="">Select Category</option>
+  <option value="Hatchback">Hatchback</option>
+  <option value="Sedan">Sedan</option>
+  <option value="SUV">SUV</option>
+  <option value="MPV">MPV</option>
+  <option value="Bike">Bike</option>
+  <option value="Scooter">Scooter</option>
+  <option value="Auto">Auto</option>
+</select>
 
         <input
           name="location"

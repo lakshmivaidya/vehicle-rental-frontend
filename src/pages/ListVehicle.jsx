@@ -58,13 +58,23 @@ export default function ListVehicle() {
         return "";
 
       case "type":
-        if (!trimmedValue) return "Vehicle type is required";
+  if (!trimmedValue) return "Vehicle type is required";
 
-        if (!/^[A-Za-z ]{2,20}$/.test(trimmedValue)) {
-          return "Type should contain only letters";
-        }
+  const allowedTypes = [
+    "Hatchback",
+    "Sedan",
+    "SUV",
+    "MPV",
+    "Bike",
+    "Scooter",
+    "Auto",
+  ];
 
-        return "";
+  if (!allowedTypes.includes(trimmedValue)) {
+    return "Please select a valid vehicle category";
+  }
+
+  return "";
 
       case "location":
         if (!trimmedValue) return "Location is required";
@@ -290,13 +300,23 @@ export default function ListVehicle() {
         <p className="text-red-500 text-sm mb-2">{errors.year}</p>
       )}
 
-      <input
-        name="type"
-        placeholder="Category/Type (Car, Bike, SUV...)"
-        value={form.type}
-        onChange={handleChange}
-        className="border p-2 w-full mb-1 rounded"
-      />
+      <select
+  name="type"
+  value={form.type}
+  onChange={handleChange}
+  className={`border p-2 w-full mb-1 rounded ${
+    form.type ? "text-black" : "text-gray-400"
+  }`}
+>
+  <option value="">Select Vehicle Category</option>
+  <option value="Hatchback">Hatchback</option>
+  <option value="Sedan">Sedan</option>
+  <option value="SUV">SUV</option>
+  <option value="MPV">MPV</option>
+  <option value="Bike">Bike</option>
+  <option value="Scooter">Scooter</option>
+  <option value="Auto">Auto</option>
+</select>
 
       {errors.type && (
         <p className="text-red-500 text-sm mb-2">{errors.type}</p>

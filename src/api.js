@@ -22,4 +22,5 @@ api.interceptors.request.use((config) => {
   
   
   //http://localhost:5000/api
+  // https://vehicle-rental-backend-beta.vercel.app/api
   

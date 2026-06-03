@@ -15,6 +15,7 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
 
   const isBookingRef = useRef(false);
 
@@ -106,7 +107,6 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
       setTimeout(() => {
         navigate("/bookings");
       }, 800);
-
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Booking failed");
@@ -213,188 +213,249 @@ export default function VehicleCard({ vehicle, refreshVehicles }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 flex flex-col transition transform hover:scale-[1.02] hover:shadow-xl">
-      <img
-        src={imageUrl}
-        alt={`${vehicle.make} ${vehicle.model}`}
-        className="h-48 w-full object-cover rounded mb-4"
-        onError={(e) => {
-          e.target.src = FALLBACK_IMAGE;
-        }}
-      />
+    <>
+      <div className="bg-white rounded-xl shadow-md p-6 flex flex-col transition transform hover:scale-[1.02] hover:shadow-xl">
+        <img
+          src={imageUrl}
+          alt={`${vehicle.make} ${vehicle.model}`}
+          className="h-48 w-full object-cover rounded mb-4"
+          onError={(e) => {
+            e.target.src = FALLBACK_IMAGE;
+          }}
+        />
 
-      {isEditing ? (
-        <div className="space-y-2">
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.make}
-            onChange={(e) =>
-              setEditData({ ...editData, make: e.target.value })
-            }
-            placeholder="Make"
-          />
+        {isEditing ? (
+          <div className="space-y-2">
+            <input
+              className="border p-2 w-full rounded"
+              value={editData.make}
+              onChange={(e) =>
+                setEditData({ ...editData, make: e.target.value })
+              }
+              placeholder="Make"
+            />
 
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.model}
-            onChange={(e) =>
-              setEditData({ ...editData, model: e.target.value })
-            }
-            placeholder="Model"
-          />
+            <input
+              className="border p-2 w-full rounded"
+              value={editData.model}
+              onChange={(e) =>
+                setEditData({ ...editData, model: e.target.value })
+              }
+              placeholder="Model"
+            />
 
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.year}
-            onChange={(e) =>
-              setEditData({ ...editData, year: e.target.value })
-            }
-            placeholder="Year"
-          />
+            <input
+              className="border p-2 w-full rounded"
+              value={editData.year}
+              onChange={(e) =>
+                setEditData({ ...editData, year: e.target.value })
+              }
+              placeholder="Year"
+            />
 
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.type}
-            onChange={(e) =>
-              setEditData({ ...editData, type: e.target.value })
-            }
-            placeholder="Type"
-          />
+            <input
+              className="border p-2 w-full rounded"
+              value={editData.type}
+              onChange={(e) =>
+                setEditData({ ...editData, type: e.target.value })
+              }
+              placeholder="Type"
+            />
 
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.location}
-            onChange={(e) =>
-              setEditData({ ...editData, location: e.target.value })
-            }
-            placeholder="Location"
-          />
+            <input
+              className="border p-2 w-full rounded"
+              value={editData.location}
+              onChange={(e) =>
+                setEditData({ ...editData, location: e.target.value })
+              }
+              placeholder="Location"
+            />
 
-          <input
-            className="border p-2 w-full rounded"
-            value={editData.pricePerDay}
-            onChange={(e) =>
-              setEditData({
-                ...editData,
-                pricePerDay: e.target.value,
-              })
-            }
-            placeholder="Price"
-          />
+            <input
+              className="border p-2 w-full rounded"
+              value={editData.pricePerDay}
+              onChange={(e) =>
+                setEditData({
+                  ...editData,
+                  pricePerDay: e.target.value,
+                })
+              }
+              placeholder="Price"
+            />
 
-          <div className="flex gap-2">
-            <button
-              onClick={updateVehicle}
-              className="bg-green-600 text-white px-3 py-1 rounded"
-            >
-              Save
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={updateVehicle}
+                className="bg-green-600 text-white px-3 py-1 rounded"
+              >
+                Save
+              </button>
 
-            <button
-              onClick={() => setIsEditing(false)}
-              className="bg-gray-500 text-white px-3 py-1 rounded"
-            >
-              Cancel
-            </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="bg-gray-500 text-white px-3 py-1 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p><b>Make:</b> {vehicle.make}</p>
+            <p><b>Model:</b> {vehicle.model}</p>
+            <p><b>Year:</b> {vehicle.year}</p>
+            <p><b>Type:</b> {vehicle.type}</p>
+            <p><b>Location:</b> {vehicle.location}</p>
+            <p><b>Price:</b> ${vehicle.pricePerDay}</p>
+
+            <p className="text-yellow-500 font-semibold mt-1">
+  {reviews.length
+    ? `★ ${avgRating.toFixed(1)}`
+    : "No ratings"}
+</p>
+
+<button
+  onClick={() => setShowReviews(true)}
+  className="text-blue-600 underline text-left hover:text-blue-800"
+>
+  View All Ratings & Reviews
+</button>
+
+            {isOwnVehicle && (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={confirmUnlistVehicle}
+                  className="bg-red-600 text-white px-3 py-1 rounded"
+                >
+                  Unlist
+                </button>
+              </div>
+            )}
+
+            {!isOwnVehicle && (
+              <div className="mt-4 flex flex-col gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    min={today}
+                    className="border p-2 rounded w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate || today}
+                    className="border p-2 rounded w-full"
+                  />
+                </div>
+              </div>
+            )}
+
+            {isOwnVehicle ? (
+              <p className="text-red-600 font-semibold mt-3">
+                You cannot book your own vehicle
+              </p>
+            ) : (
+              <button
+                onClick={bookVehicle}
+                disabled={loading}
+                className="p-2 mt-3 rounded text-white bg-blue-600"
+              >
+                {loading ? "Booking..." : "Book Now"}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {showReviews && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-lg font-bold">
+                Ratings & Reviews
+              </h2>
+
+              <button
+                onClick={() => setShowReviews(false)}
+                className="text-gray-500 hover:text-black text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-4">
+              {reviews.length > 0 ? (
+                <>
+                  <div className="mb-4">
+                    <p className="text-yellow-600 font-semibold text-lg">
+                      ★ {avgRating.toFixed(1)} / 5
+                    </p>
+
+                    <p className="text-gray-600">
+                      {reviews.length} review
+                      {reviews.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {reviews.map((review, index) => (
+                      <div
+                        key={index}
+                        className="border-b pb-3"
+                      >
+                        <p className="font-semibold">
+                          {review.userName}
+                        </p>
+
+                        <p className="text-yellow-600">
+                          ★ {review.rating}/5
+                        </p>
+
+                        {review.comment && (
+                          <p className="text-gray-700 mt-1">
+                            {review.comment}
+                          </p>
+                        )}
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(
+                            review.date
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-600">
+                  No ratings or reviews yet.
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          <p>
-            <b>Make:</b> {vehicle.make}
-          </p>
-
-          <p>
-            <b>Model:</b> {vehicle.model}
-          </p>
-
-          <p>
-            <b>Year:</b> {vehicle.year}
-          </p>
-
-          <p>
-            <b>Type:</b> {vehicle.type}
-          </p>
-
-          <p>
-            <b>Location:</b> {vehicle.location}
-          </p>
-
-          <p>
-            <b>Price:</b> ${vehicle.pricePerDay}
-          </p>
-
-          <p className="text-yellow-500 font-semibold mt-1">
-            {reviews.length
-              ? `★ ${avgRating.toFixed(1)}`
-              : "No ratings"}
-          </p>
-
-          {isOwnVehicle && (
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-blue-600 text-white px-3 py-1 rounded"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={confirmUnlistVehicle}
-                className="bg-red-600 text-white px-3 py-1 rounded"
-              >
-                Unlist
-              </button>
-            </div>
-          )}
-
-          {!isOwnVehicle && (
-            <div className="mt-4 flex flex-col gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
-                </label>
-
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  min={today}
-                  className="border p-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
-                </label>
-
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={startDate || today}
-                  className="border p-2 rounded w-full"
-                />
-              </div>
-            </div>
-          )}
-
-          {isOwnVehicle ? (
-            <p className="text-red-600 font-semibold mt-3">
-              You cannot book your own vehicle
-            </p>
-          ) : (
-            <button
-              onClick={bookVehicle}
-              disabled={loading}
-              className="p-2 mt-3 rounded text-white bg-blue-600"
-            >
-              {loading ? "Booking..." : "Book Now"}
-            </button>
-          )}
-        </>
       )}
-    </div>
+    </>
   );
 }
